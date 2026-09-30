@@ -27,7 +27,8 @@ docs/           PLAN.md, PROGRESS.md, refs/ (manuales, CSV de umbrales y backtes
 ## Comandos
 
 - `pnpm dev` · `pnpm lint` · `pnpm typecheck` · `pnpm test`
-- `supabase db push` (aplica migraciones) · `supabase functions deploy <fn>`
+- `pnpm db:migrate` (aplica migraciones) · `supabase functions deploy <fn>`
+- **Nunca `supabase db push` ni `supabase pull`:** el proyecto Supabase es el de Handy (esquema `clima`) y pisarían su historial de migraciones. `supabase config push` solo después de revisar `supabase config diff`.
 - `vercel env pull .env.local`
 
 ## Reglas del proyecto
