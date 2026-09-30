@@ -37,7 +37,8 @@ export async function vincularChat(formData: FormData) {
     data: { user },
   } = await session.auth.getUser();
   const email = user?.email?.toLowerCase();
-  if (!user || !email || !allowedEmails().includes(email)) {
+  // Auth se comparte con Handy (incluye sesiones anónimas): exigir mail confirmado y habilitado.
+  if (!user || !email || !user.email_confirmed_at || !allowedEmails().includes(email)) {
     redirect(vincularUrl(codigo, { error: "acceso" }));
   }
 
