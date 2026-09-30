@@ -14,6 +14,9 @@ Versión condensada de la Propuesta MVP (30/09/2026). Leer solo la sección del 
 **Core**
 
 - Vista general sin evento: lugares guardados, pronóstico combinado a 7 días, alertas de zona (SMN y Zonda).
+- Lenguaje simple en web y bot: frases y estado por lugar y día en lugar de tablas (las tablas quedan como detalle).
+- Ingreso sin mail desde el bot: `/web` manda un link de un solo uso que abre la web con sesión iniciada.
+- Elegir qué seguir: lugares y eventos a vigilar y a qué prestar atención (viento, tormenta, calor, lluvia).
 - Alta de evento: predio en mapa, fases (armado, show, desarme) con horario, público estimado.
 - Catálogo de estructuras con umbral de ráfaga por estado (con o sin lonas), acción de mitigación y horas que lleva hacerla.
 - Motor multimodelo (Open-Meteo + WRF SMN) con consenso y dispersión.
@@ -24,7 +27,7 @@ Versión condensada de la Propuesta MVP (30/09/2026). Leer solo la sección del 
 - Alertas Críticas a Handy (si Handy acepta webhook; si no, Fase 2).
 - Bitácora de alertas y decisiones. Backtest. Verificación diaria y ranking de modelos (versión simple).
 
-**Fase 2:** WhatsApp, rosa de vientos y orientación de escenario (StagePlot/Layout), anemómetro, integración con ACCRED, PDF de respaldo, radar y tormentas eléctricas.
+**Fase 2:** avisos push en la app y la web, WhatsApp, rosa de vientos y orientación de escenario (StagePlot/Layout), anemómetro, integración con ACCRED, PDF de respaldo, radar y tormentas eléctricas.
 
 **Descartado:** modelo o ML propio, app nativa, app de clima masiva.
 
@@ -62,6 +65,12 @@ RLS por organización en todas las tablas.
 - Confirmar disponibilidad real de: alertas SMN, observaciones en tiempo real, histórico del WRF. Anotar resultado en PROGRESS.
 - **Listo cuando:** Hugo ve la semana de San Juan en la web y en el bot, y el latido avisa si una fuente se cae.
 
+### Hito 1b — Frases e ingreso sin mail (sumado el 2026-09-30)
+- Frases simples por lugar y día (vocabulario de viento: escala de Beaufort, OMM), en la web y en el bot.
+- Web con una tarjeta por lugar: estado, hoy, mañana y la semana plegada.
+- `/web` en el bot: link de un solo uso (10 min) que abre la web con sesión iniciada.
+- **Listo cuando:** Hugo entra a la web desde el bot sin poner el mail y lee la semana de San Juan en frases.
+
 ### Hito 2 — Backtest
 - Input: `docs/refs/backtest_eventos.csv`.
 - Reconstruir pronósticos de esas fechas (Historical Forecast API de Open-Meteo o histórico del WRF) contra lo observado.
@@ -70,6 +79,7 @@ RLS por organización en todas las tablas.
 
 ### Hito 3 — Eventos y semáforo
 - Alta de evento, fases, catálogo de estructuras (cargado desde `docs/refs/umbrales_estructuras.csv`), semáforo por hora.
+- Elegir qué seguir: lugares y eventos vigilados, y a qué variables prestar atención.
 - **Listo cuando:** un evento real muestra el semáforo correcto para cada estructura en cada fase.
 
 ### Hito 4 — Alertas

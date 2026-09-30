@@ -47,14 +47,14 @@ const reply = (text: string, data = overview) => buildReply(parseIntent(text), d
 describe("buildReply", () => {
   it("/semana sin lugar manda todos los lugares", () => {
     const text = reply("/semana");
-    expect(text).toContain("San Juan Ciudad · próximos 2 días");
-    expect(text).toContain("Córdoba Villa Allende · próximos 1 días");
+    expect(text).toContain("San Juan Ciudad\nmié 30 · Ventoso.");
+    expect(text).toContain("Córdoba Villa Allende\nmié 30 · Ventoso y lluvia. Lluvia de 2 a 12 mm.");
   });
 
   it("/semana con lugar manda solo ese", () => {
     const text = reply("/semana cordoba");
     expect(text).toContain("Córdoba Villa Allende");
-    expect(text).not.toContain("San Juan Ciudad ·");
+    expect(text).not.toContain("San Juan Ciudad");
   });
 
   it("/semana con un lugar desconocido no adivina", () => {
@@ -65,15 +65,15 @@ describe("buildReply", () => {
 
   it("responde una pregunta de viento para mañana con la ráfaga más alta", () => {
     expect(reply("viento mañana en san juan")).toContain(
-      "San Juan Ciudad, mañana (jue 1): viento 28 km/h del O · ráfagas hasta 80 km/h (15 h)",
+      "San Juan Ciudad, mañana (jue 1): Viento moderado del oeste, ráfagas de hasta 80 km/h a las 15 h.",
     );
   });
 
   it("sin lugar responde para todos, y avisa si falta el dato", () => {
     const text = reply("llueve mañana?");
-    expect(text).toContain("San Juan Ciudad, mañana (jue 1): sin lluvia");
-    expect(text).toContain("Córdoba Villa Allende, mañana (jue 1): sin dato");
-    expect(reply("lluvia hoy en cordoba")).toContain("hoy (mié 30): lluvia 2 a 12 mm");
+    expect(text).toContain("San Juan Ciudad, mañana (jue 1): Sin lluvia.");
+    expect(text).toContain("Córdoba Villa Allende, mañana (jue 1): sin dato.");
+    expect(reply("lluvia hoy en cordoba")).toContain("hoy (mié 30): Lluvia de 2 a 12 mm.");
   });
 
   it("el pie dice la frescura, avisa fuentes caídas y atribuye al SMN", () => {

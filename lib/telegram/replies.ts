@@ -1,14 +1,13 @@
 import type { DaySummary } from "@/lib/forecast/combine";
 import { localDateParts } from "@/lib/forecast/combine";
+import { formatAgo, formatDayLabel } from "@/lib/forecast/format";
 import {
-  formatAgo,
-  formatDayLabel,
-  formatDayLine,
-  formatGust,
-  formatPrecipitation,
-  formatTemperature,
-  formatWind,
-} from "@/lib/forecast/format";
+  dayPhrase,
+  dayStatus,
+  rainSentence,
+  temperatureSentence,
+  windSentence,
+} from "@/lib/forecast/phrases";
 import { isStale, sourceLabel } from "@/lib/health/check";
 import type { Overview, PlaceForecast } from "@/lib/forecast/queries";
 import { matchPlace, type Intent, type Topic } from "./intents";
@@ -25,6 +24,7 @@ export function helpText(name: string): string {
     "Probá:",
     "/semana — la semana de tus lugares guardados",
     "/semana San Juan — la semana de un lugar",
+    "/web — abrir la web sin poner el mail",
     "O preguntame: ¿viento mañana en el estadio? ¿llueve hoy en Córdoba?",
   ].join("\n");
 }
@@ -49,18 +49,17 @@ export function footer(overview: Overview, now: Date): string {
   return lines.join("\n");
 }
 
-function topicLine(day: DaySummary, topic: Topic): string {
+/** El estado y las frases del día; para un tema, solo esa frase. */
+export function dayText(day: DaySummary, topic: Topic = "general"): string {
   switch (topic) {
     case "viento":
-      return `viento ${formatWind(day)} · ráfagas ${formatGust(day)}`;
-    case "lluvia": {
-      const rain = formatPrecipitation(day);
-      return rain === "sin lluvia" ? rain : `lluvia ${rain}`;
-    }
+      return windSentence(day);
+    case "lluvia":
+      return rainSentence(day);
     case "temperatura":
-      return formatTemperature(day);
+      return temperatureSentence(day);
     default:
-      return formatDayLine(day).replace(/^[^:]+: /, "");
+      return `${dayStatus(day).label}. ${dayPhrase(day)}`;
   }
 }
 
@@ -70,19 +69,22 @@ function addDays(date: string, days: number): string {
 }
 
 function weekBlock({ place, days }: PlaceForecast): string {
-  return [`${place.name} · próximos ${days.length} días`, ...days.map(formatDayLine)].join("\n");
+  return [
+    place.name,
+    ...days.map((day) => `${formatDayLabel(day.date)} · ${dayText(day)}`),
+  ].join("\n");
 }
 
 function dayBlock({ place, days }: PlaceForecast, offset: number, topic: Topic, now: Date): string {
   const date = addDays(localDateParts(now, place.timezone).date, offset);
   const day = days.find((candidate) => candidate.date === date);
   const label = `${place.name}, ${DAY_NAMES[offset]} (${formatDayLabel(date)})`;
-  return day ? `${label}: ${topicLine(day, topic)}` : `${label}: sin dato`;
+  return day ? `${label}: ${dayText(day, topic)}` : `${label}: sin dato.`;
 }
 
 /** Texto de respuesta para un chat vinculado. */
 export function buildReply(intent: Intent, overview: Overview, name: string, now: Date): string {
-  if (intent.kind === "help") return helpText(name);
+  if (intent.kind === "help" || intent.kind === "web") return helpText(name);
 
   if (overview.places.length === 0) return "Todavía no hay lugares guardados.";
   const withData = overview.places.filter((place) => place.days.length > 0);
