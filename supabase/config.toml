@@ -6,3 +6,7 @@ project_id = "masalto-clima"
 
 [api]
 schemas = ["public", "graphql_public", "clima"]
+
+[auth]
+# Remoto estaba vacío antes de clima. Si Handy suma URLs, agregarlas acá también.
+additional_redirect_urls = ["https://masalto-clima.vercel.app/**", "http://localhost:3000/**"]
