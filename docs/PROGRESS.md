@@ -4,9 +4,9 @@ Actualizar al cerrar cada sesión. Máximo 40 líneas: lo viejo se resume.
 
 ## Estado
 
-- Hito en curso: **Hito 1 — Datos + vista general** (Hito 0 cerrado el 2026-09-30, pendiente de merge del PR #1)
+- Hito en curso: **Hito 1 — Datos + vista general** (Hito 0 cerrado y mergeado el 2026-09-30)
 - Último cambio: 2026-09-30
-- Rama activa: `hito-0-setup` (próxima: `hito-1-<slug>`)
+- Rama activa: — (próxima: `hito-1-<slug>`)
 
 ## Hecho
 
@@ -30,5 +30,5 @@ Actualizar al cerrar cada sesión. Máximo 40 líneas: lo viejo se resume.
 
 - 2026-09-30: stack Next.js + Supabase + Vercel; Telegram primero, WhatsApp en Fase 2; marca primaria MasAlto (nombre final pendiente).
 - 2026-09-30: plan gratuito de Supabase lleno (2 proyectos) → clima vive en el esquema `clima` del proyecto `handy` (ref `ootloeyokctgqonxqwon`). Comparte Auth, cuota y claves con Handy.
-- 2026-09-30: **nunca correr `supabase db push` ni `supabase config push` desde este repo**: pisarían el historial y la configuración de Handy. Migraciones con `pnpm db:migrate` (registro en `clima.schema_migrations`).
+- 2026-09-30: **nunca correr `supabase db push` ni `supabase pull` desde este repo**: pisarían el historial de Handy. `supabase config push` solo tras revisar `supabase config diff`. Migraciones con `pnpm db:migrate` (registro en `clima.schema_migrations`).
 - 2026-09-30: acceso a `/vincular` por lista de mails (`ALLOWED_EMAILS`); el primer ingreso crea el perfil en la organización inicial "MasAlto".
