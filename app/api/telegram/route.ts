@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { appUrl, requireEnv } from "@/lib/env";
+import { loadOverview } from "@/lib/forecast/queries";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendMessage } from "@/lib/telegram/client";
 import { handleUpdate, isValidSecret, type TelegramUpdate } from "@/lib/telegram/handler";
@@ -26,17 +27,19 @@ export async function POST(request: Request) {
     await handleUpdate(update, {
       appUrl: appUrl(),
       sendMessage,
-      findLinkedName: async (chatId) => {
+      findLinked: async (chatId) => {
         const { data, error } = await supabase
           .from("channels")
-          .select("profiles(full_name)")
+          .select("organization_id, profiles(full_name)")
           .eq("kind", "telegram")
           .eq("external_id", chatId)
           .eq("active", true)
-          .maybeSingle<{ profiles: { full_name: string } | null }>();
+          .maybeSingle<{ organization_id: string; profiles: { full_name: string } | null }>();
         if (error) throw error;
-        return data?.profiles?.full_name ?? null;
+        if (!data?.profiles) return null;
+        return { name: data.profiles.full_name, organizationId: data.organization_id };
       },
+      loadOverview: (organizationId, now) => loadOverview(supabase, now, organizationId),
       createLinkCode: async (chatId, displayName) => {
         const code = generateLinkCode();
         const { error } = await supabase.from("channel_link_codes").insert({

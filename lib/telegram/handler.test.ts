@@ -1,14 +1,45 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Overview } from "@/lib/forecast/queries";
 import { handleUpdate, isValidSecret, type TelegramDeps, type TelegramUpdate } from "./handler";
 import { generateLinkCode, hashLinkCode } from "./link-codes";
 
-function deps(linkedName: string | null): TelegramDeps {
+const NOW = new Date("2026-09-30T15:00:00Z");
+
+const overview: Overview = {
+  places: [
+    {
+      place: { id: "sj", name: "San Juan Ciudad", timezone: "America/Argentina/San_Juan" },
+      sources: ["open-meteo", "smn-wrf"],
+      days: [
+        {
+          date: "2026-09-30",
+          temperatureMin: 9,
+          temperatureMax: 24,
+          precipitation: 0,
+          precipitationHigh: 0,
+          windMax: 28,
+          windDirection: 270,
+          gustMax: 62,
+          gustLow: 40,
+          gustHour: 16,
+          models: 5,
+        },
+      ],
+    },
+  ],
+  health: [{ source: "open-meteo", last_ok_at: "2026-09-30T14:48:00Z" }],
+};
+
+function deps(linkedName: string | null) {
   return {
     appUrl: "https://clima.test",
-    findLinkedName: vi.fn().mockResolvedValue(linkedName),
+    findLinked: vi
+      .fn()
+      .mockResolvedValue(linkedName ? { name: linkedName, organizationId: "org-1" } : null),
+    loadOverview: vi.fn().mockResolvedValue(overview),
     createLinkCode: vi.fn().mockResolvedValue("codigo-1"),
     sendMessage: vi.fn().mockResolvedValue(undefined),
-  };
+  } satisfies TelegramDeps;
 }
 
 function update(text: string, type = "private"): TelegramUpdate {
@@ -16,11 +47,38 @@ function update(text: string, type = "private"): TelegramUpdate {
 }
 
 describe("handleUpdate", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("saluda por nombre a un chat vinculado", async () => {
     const d = deps("Hugo");
     await handleUpdate(update("buenas"), d);
-    expect(d.sendMessage).toHaveBeenCalledWith("42", "hola, Hugo");
+    expect(d.sendMessage).toHaveBeenCalledWith("42", expect.stringMatching(/^hola, Hugo\n/));
     expect(d.createLinkCode).not.toHaveBeenCalled();
+    expect(d.loadOverview).not.toHaveBeenCalled();
+  });
+
+  it("con /semana manda la semana de los lugares de su organización", async () => {
+    const d = deps("Hugo");
+    await handleUpdate(update("/semana"), d);
+    expect(d.loadOverview).toHaveBeenCalledWith("org-1", NOW);
+    const text = d.sendMessage.mock.calls[0][1] as string;
+    expect(text).toContain("San Juan Ciudad · próximos 1 días");
+    expect(text).toContain("mié 30: 9 a 24 °C · sin lluvia · viento 28 km/h del O · ráfagas hasta 62 km/h (16 h)");
+    expect(text).toContain("Actualizado: Open-Meteo hace 12 min.");
+    expect(text).toContain("Fuente: Open-Meteo y SMN.");
+  });
+
+  it("un chat no vinculado no recibe pronóstico aunque mande /semana", async () => {
+    const d = deps(null);
+    await handleUpdate(update("/semana"), d);
+    expect(d.sendMessage).not.toHaveBeenCalled();
+    expect(d.loadOverview).not.toHaveBeenCalled();
   });
 
   it("ignora a un chat no vinculado", async () => {
@@ -44,7 +102,7 @@ describe("handleUpdate", () => {
     const d = deps("Hugo");
     await handleUpdate(update("/start", "group"), d);
     await handleUpdate({}, d);
-    expect(d.findLinkedName).not.toHaveBeenCalled();
+    expect(d.findLinked).not.toHaveBeenCalled();
     expect(d.sendMessage).not.toHaveBeenCalled();
   });
 });
