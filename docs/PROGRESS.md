@@ -27,8 +27,7 @@ Actualizar al cerrar cada sesión. Máximo 40 líneas: lo viejo se resume.
 
 ## Pendiente / bloqueos
 
-- Hugo: probar en producción después del merge (`/semana` en el bot y la web con su mail).
-- El workflow `wrf.yml` recién corre programado cuando está en `main`.
+- Hugo: probar en producción después del merge (`/semana` en el bot y la web con su mail). `wrf.yml` recién corre programado cuando está en `main`.
 - Plan gratuito de Open-Meteo es no comercial: contratar el plan y cargar `CLIMA_OPEN_METEO_API_KEY` antes de uso comercial.
 - ¿Handy acepta webhook? · Umbrales por estructura (`umbrales_estructuras.csv`) · Eventos para el backtest (`backtest_eventos.csv`).
 
