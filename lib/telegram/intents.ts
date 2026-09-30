@@ -4,6 +4,7 @@ export type Intent =
   /** `explicitPlace`: vino como `/semana <lugar>`, así que el texto es solo el lugar. */
   | { kind: "week"; placeQuery: string; explicitPlace: boolean }
   | { kind: "day"; offset: number; topic: Topic; placeQuery: string }
+  | { kind: "web" }
   | { kind: "help" };
 
 const STOPWORDS = new Set(["de", "del", "la", "el", "los", "las", "en", "y"]);
@@ -29,7 +30,9 @@ const GENERAL = /\b(clima|tiempo|pronostico|como esta|como viene)\b/;
 export function parseIntent(text: string): Intent {
   const command = /^\/(\w+)(?:@\w+)?(?:\s+([\s\S]*))?$/.exec(text.trim());
   if (command) {
-    if (command[1].toLowerCase() !== "semana") return { kind: "help" };
+    const name = command[1].toLowerCase();
+    if (name === "web") return { kind: "web" };
+    if (name !== "semana") return { kind: "help" };
     const placeQuery = normalize(command[2] ?? "");
     return { kind: "week", placeQuery, explicitPlace: placeQuery !== "" };
   }

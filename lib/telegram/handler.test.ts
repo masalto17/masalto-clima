@@ -35,7 +35,10 @@ function deps(linkedName: string | null) {
     appUrl: "https://clima.test",
     findLinked: vi
       .fn()
-      .mockResolvedValue(linkedName ? { name: linkedName, organizationId: "org-1" } : null),
+      .mockResolvedValue(
+        linkedName ? { name: linkedName, organizationId: "org-1", profileId: "perfil-1" } : null,
+      ),
+    createWebLogin: vi.fn().mockResolvedValue("token-web"),
     loadOverview: vi.fn().mockResolvedValue(overview),
     createLinkCode: vi.fn().mockResolvedValue("codigo-1"),
     sendMessage: vi.fn().mockResolvedValue(undefined),
@@ -68,17 +71,30 @@ describe("handleUpdate", () => {
     await handleUpdate(update("/semana"), d);
     expect(d.loadOverview).toHaveBeenCalledWith("org-1", NOW);
     const text = d.sendMessage.mock.calls[0][1] as string;
-    expect(text).toContain("San Juan Ciudad · próximos 1 días");
-    expect(text).toContain("mié 30: 9 a 24 °C · sin lluvia · viento 28 km/h del O · ráfagas hasta 62 km/h (16 h)");
+    expect(text).toContain(
+      "San Juan Ciudad\nmié 30 · Ventoso. Sin lluvia. De 9 a 24 °C. Viento moderado del oeste, ráfagas de hasta 62 km/h a las 16 h.",
+    );
     expect(text).toContain("Actualizado: Open-Meteo hace 12 min.");
     expect(text).toContain("Fuente: Open-Meteo y SMN.");
   });
 
-  it("un chat no vinculado no recibe pronóstico aunque mande /semana", async () => {
+  it("un chat no vinculado no recibe pronóstico ni link a la web", async () => {
     const d = deps(null);
     await handleUpdate(update("/semana"), d);
+    await handleUpdate(update("/web"), d);
     expect(d.sendMessage).not.toHaveBeenCalled();
     expect(d.loadOverview).not.toHaveBeenCalled();
+    expect(d.createWebLogin).not.toHaveBeenCalled();
+  });
+
+  it("con /web manda un link de ingreso para su perfil", async () => {
+    const d = deps("Hugo");
+    await handleUpdate(update("/web"), d);
+    expect(d.createWebLogin).toHaveBeenCalledWith("perfil-1");
+    expect(d.sendMessage).toHaveBeenCalledWith(
+      "42",
+      expect.stringContaining("https://clima.test/entrar?t=token-web"),
+    );
   });
 
   it("ignora a un chat no vinculado", async () => {

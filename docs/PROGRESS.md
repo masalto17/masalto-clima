@@ -4,19 +4,17 @@ Actualizar al cerrar cada sesión. Máximo 40 líneas: lo viejo se resume.
 
 ## Estado
 
-- Hito en curso: **Hito 1 — Datos + vista general** (construido; PR abierto, falta merge y prueba de Hugo en producción)
+- Hito en curso: **Hito 1b — Frases e ingreso sin mail** (PR abierto). Hito 1 mergeado; falta la prueba de Hugo en producción.
 - Último cambio: 2026-09-30
-- Rama activa: `hito-1-datos-vista-general`
+- Rama activa: `hito-1b-frases-ingreso`
 
 ## Hecho
 
 - Hito 0 (mergeado): scaffold, CI, esquema base con RLS, bot con vinculación por código, `/vincular`, producción en https://masalto-clima.vercel.app (`@MasAlto_Clima_Bot`).
 - Migración `0002_forecasts.sql` (aplicada en `handy`): `forecasts` particionada por mes (retención 90 días), vista `forecasts_latest`, `places` con `is_saved_place`/`smn_station`/`notes`, `system_health.alerted_at`, pg_cron + pg_net, 3 lugares: San Juan Ciudad, Estadio San Juan del Bicentenario, Córdoba Villa Allende.
-- Open-Meteo: `lib/open-meteo` (ECMWF, GFS, ICON, GEM, Météo-France) → Edge Function `clima-ingest-open-meteo`, pg_cron cada hora.
-- WRF SMN 4 km: `workers/wrf/ingest.py`, GitHub Actions cada 3 h (`wrf.yml`), guarda solo el punto de cada lugar (72 h).
-- Combinado por día (`lib/forecast/combine`): mediana en temperatura y lluvia; viento y ráfaga = valor más alto entre modelos.
-- Vista general en `/` (ingreso por link al mail, `ALLOWED_EMAILS`): semana por lugar, "actualizado hace X", aviso si una fuente está caída, atribución SMN.
-- Bot: `/semana [lugar]` y preguntas por reglas (hoy, mañana, pasado mañana; viento, lluvia, temperatura). Lo no reconocido → "hola, <nombre>" + ayuda.
+- Datos: Open-Meteo (5 modelos, Edge Function `clima-ingest-open-meteo`, cada hora) y WRF SMN 4 km (`workers/wrf`, GitHub Actions cada 3 h, 72 h). Combinado por día en `lib/forecast/combine`: mediana en temperatura y lluvia; viento y ráfaga = el más alto.
+- Web `/` (ingreso por mail o `/web`, `ALLOWED_EMAILS`), "actualizado hace X", aviso de fuente caída, atribución SMN. Bot: `/semana [lugar]`, `/web` y preguntas por reglas (hoy, mañana, pasado; viento, lluvia, temperatura).
+- Hito 1b: web en tarjetas con frases (estado + hoy + mañana + semana plegada, lo más urgente arriba); bot en frases; `/web` manda link de un solo uso (10 min) → `/entrar` → botón "Entrar" abre sesión sin mail (migración `0003_web_login.sql`, aplicada).
 - Latido: Edge Function `clima-health-check` cada 30 min; fuente sin actualizar en 6 h → Telegram "Sistema sin datos, usar SMN" (un aviso por caída y uno al volver). Probado de punta a punta con una fuente de prueba.
 
 ## Disponibilidad de fuentes (verificado 2026-09-30)
@@ -32,6 +30,8 @@ Actualizar al cerrar cada sesión. Máximo 40 líneas: lo viejo se resume.
 - ¿Handy acepta webhook? · Umbrales por estructura (`umbrales_estructuras.csv`) · Eventos para el backtest (`backtest_eventos.csv`).
 
 ## Decisiones
+
+- 2026-09-30: Hugo quiere app simple en lenguaje natural. Suma al MVP: frases en lugar de tablas, ingreso sin mail desde el bot (Hito 1b) y elegir qué seguir (Hito 3). Push en app y web → Fase 2. Vocabulario de viento: escala de Beaufort (OMM), no es umbral de riesgo.
 
 - 2026-09-30: clima vive en el esquema `clima` del proyecto Supabase `handy`. **Nunca `supabase db push` ni `supabase pull`**; migraciones con `pnpm db:migrate`.
 - 2026-09-30: Edge Functions y secretos con prefijo `clima-`/`CLIMA_` (proyecto compartido). Se publican sin JWT y validan `x-clima-cron-secret` (Vault + secreto de función).

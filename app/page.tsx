@@ -15,15 +15,21 @@ function Ingreso({ estado }: { estado?: string }) {
       {estado === "mail" ? (
         <p>Si el mail está habilitado, te llegó un link de ingreso. Abrilo en este dispositivo.</p>
       ) : (
-        <form action={ingresar} className="flex max-w-sm flex-col gap-3">
-          <label className="flex flex-col gap-1">
-            Tu mail
-            <input type="email" name="email" required autoComplete="email" className={inputClass} />
-          </label>
-          <button type="submit" className={buttonClass}>
-            Mandame el link de ingreso
-          </button>
-        </form>
+        <div className="flex max-w-sm flex-col gap-5">
+          <p>
+            ¿Tenés Telegram vinculado? Mandale <strong>/web</strong> al bot y entrás sin poner el
+            mail.
+          </p>
+          <form action={ingresar} className="flex flex-col gap-3">
+            <label className="flex flex-col gap-1">
+              O con tu mail
+              <input type="email" name="email" required autoComplete="email" className={inputClass} />
+            </label>
+            <button type="submit" className={buttonClass}>
+              Mandame el link de ingreso
+            </button>
+          </form>
+        </div>
       )}
     </Shell>
   );
