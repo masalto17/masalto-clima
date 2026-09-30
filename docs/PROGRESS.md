@@ -4,9 +4,9 @@ Actualizar al cerrar cada sesión. Máximo 40 líneas: lo viejo se resume.
 
 ## Estado
 
-- Hito en curso: **Hito 0 — Setup** (código listo; falta aplicar en Supabase, token de Telegram y deploy)
+- Hito en curso: **Hito 1 — Datos + vista general** (Hito 0 cerrado el 2026-09-30, pendiente de merge del PR #1)
 - Último cambio: 2026-09-30
-- Rama activa: `hito-0-setup`
+- Rama activa: `hito-0-setup` (próxima: `hito-1-<slug>`)
 
 ## Hecho
 
@@ -15,12 +15,13 @@ Actualizar al cerrar cada sesión. Máximo 40 líneas: lo viejo se resume.
 - Migración `0001_clima_base.sql`: `organizations`, `profiles`, `places`, `channels`, `channel_link_codes`, `system_health`, RLS en todas.
 - Bot: `/api/telegram` (valida token secreto), `/start` → link a `/vincular` (código de un solo uso, 10 min), chat vinculado recibe "hola, <nombre>", no vinculado se ignora.
 - `/vincular`: ingreso por link al mail (Supabase Auth), solo mails de `ALLOWED_EMAILS`.
+- Aplicado en `handy`: migración, esquema `clima` expuesto en la API, URLs de redirección de Auth.
+- Producción en https://masalto-clima.vercel.app; bot `@MasAlto_Clima_Bot` con webhook y secreto.
+- "Listo cuando" verificado: chat vinculado recibe "hola, Hugo", no vinculado se ignora, la URL carga.
 
 ## Pendiente / bloqueos
 
-- OK de Hugo para tocar el proyecto `handy`: aplicar migración, exponer esquema `clima` en la API, sumar URL de redirección de Auth.
-- Token del bot de Telegram (Hugo lo crea con @BotFather) → `.env.local`.
-- Variables en Vercel, deploy a producción, `setWebhook`, verificar "Listo cuando".
+- Deploy a producción: lo corre Hugo (`vercel deploy --prod --yes`) o sale con el merge a `main`; Claude no tiene permiso.
 - ¿Handy acepta webhook? (define si las alertas a Handy entran al Core).
 - Umbrales de viento por estructura → `docs/refs/umbrales_estructuras.csv`.
 - Eventos y días de Zonda para el backtest → `docs/refs/backtest_eventos.csv`.
