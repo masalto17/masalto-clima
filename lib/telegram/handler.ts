@@ -1,4 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
+import type { Overview } from "@/lib/forecast/queries";
+import { parseIntent } from "./intents";
+import { buildReply, helpText } from "./replies";
 
 export type TelegramUpdate = {
   message?: {
@@ -8,9 +11,13 @@ export type TelegramUpdate = {
   };
 };
 
+export type LinkedChat = { name: string; organizationId: string };
+
 export type TelegramDeps = {
-  /** Nombre del perfil vinculado al chat, o null si el chat no está vinculado. */
-  findLinkedName: (chatId: string) => Promise<string | null>;
+  /** Perfil vinculado al chat, o null si el chat no está vinculado. */
+  findLinked: (chatId: string) => Promise<LinkedChat | null>;
+  /** Pronóstico combinado de los lugares guardados de la organización. */
+  loadOverview: (organizationId: string, now: Date) => Promise<Overview>;
   /** Crea un código de un solo uso para el chat y devuelve el código en claro. */
   createLinkCode: (chatId: string, displayName: string | null) => Promise<string>;
   sendMessage: (chatId: string, text: string) => Promise<void>;
@@ -30,10 +37,17 @@ export async function handleUpdate(update: TelegramUpdate, deps: TelegramDeps): 
   if (!message || message.chat.type !== "private") return;
 
   const chatId = String(message.chat.id);
-  const linkedName = await deps.findLinkedName(chatId);
+  const linked = await deps.findLinked(chatId);
 
-  if (linkedName) {
-    await deps.sendMessage(chatId, `hola, ${linkedName}`);
+  if (linked) {
+    const intent = parseIntent(message.text ?? "");
+    if (intent.kind === "help") {
+      await deps.sendMessage(chatId, helpText(linked.name));
+      return;
+    }
+    const now = new Date();
+    const overview = await deps.loadOverview(linked.organizationId, now);
+    await deps.sendMessage(chatId, buildReply(intent, overview, linked.name, now));
     return;
   }
 

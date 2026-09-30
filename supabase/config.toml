@@ -10,3 +10,10 @@ schemas = ["public", "graphql_public", "clima"]
 [auth]
 # Remoto estaba vacío antes de clima. Si Handy suma URLs, agregarlas acá también.
 additional_redirect_urls = ["https://masalto-clima.vercel.app/**", "http://localhost:3000/**"]
+
+# Las llama pg_cron con un secreto propio (x-clima-cron-secret), no con JWT.
+[functions.clima-ingest-open-meteo]
+verify_jwt = false
+
+[functions.clima-health-check]
+verify_jwt = false
