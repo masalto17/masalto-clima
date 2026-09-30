@@ -1,0 +1,12 @@
+# OJO: el proyecto Supabase vinculado es el de Handy (compartido).
+# Este archivo declara SOLO lo que clima necesita; `supabase config push` deja
+# sin cambios lo que no está declarado. No agregar secciones sin revisar antes
+# `supabase config diff`: lo que se declare acá pisa la configuración de Handy.
+project_id = "masalto-clima"
+
+[api]
+schemas = ["public", "graphql_public", "clima"]
+
+[auth]
+# Remoto estaba vacío antes de clima. Si Handy suma URLs, agregarlas acá también.
+additional_redirect_urls = ["https://masalto-clima.vercel.app/**", "http://localhost:3000/**"]
