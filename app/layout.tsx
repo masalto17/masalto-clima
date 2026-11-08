@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 
@@ -17,6 +17,15 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "MasAlto Clima",
   description: "Centro de riesgo climático por evento del ecosistema MasAlto.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
 };
 
 export default function RootLayout({
