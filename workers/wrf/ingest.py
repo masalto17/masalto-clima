@@ -13,6 +13,7 @@ import os
 import re
 import sys
 import tempfile
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -31,6 +32,8 @@ MAX_RUN_AGE = timedelta(hours=12)
 # La grilla es de 4 km: un lugar a más de esto de su punto más cercano está fuera del dominio.
 MAX_GRID_DISTANCE_KM = 6.0
 DOWNLOAD_WORKERS = 6
+RETRY_ATTEMPTS = 3
+RETRY_STATUSES = {429, 500, 502, 503, 504}
 
 # Variable del archivo → (columna de forecasts, factor de conversión)
 VARIABLES = {
@@ -62,14 +65,35 @@ def count_hourly_files(listing_xml: str) -> int:
     return len(set(re.findall(r"<Key>[^<]*WRFDETAR_01H_[^<]*\.nc</Key>", listing_xml)))
 
 
+def get_with_retry(session: requests.Session, url: str, **kwargs) -> requests.Response:
+    """GET con reintentos ante cortes y 5xx/429. No reintenta 4xx definitivos."""
+    last_error: Exception | None = None
+    for attempt in range(RETRY_ATTEMPTS):
+        try:
+            response = session.get(url, **kwargs)
+            if response.status_code in RETRY_STATUSES and attempt < RETRY_ATTEMPTS - 1:
+                response.close()
+                time.sleep(1.5 * (attempt + 1))
+                continue
+            response.raise_for_status()
+            return response
+        except (requests.Timeout, requests.ConnectionError) as error:
+            last_error = error
+            if attempt == RETRY_ATTEMPTS - 1:
+                raise
+            time.sleep(1.5 * (attempt + 1))
+    assert last_error is not None
+    raise last_error
+
+
 def latest_complete_run(now: datetime, session: requests.Session) -> datetime | None:
     for run in candidate_runs(now):
-        response = session.get(
+        response = get_with_retry(
+            session,
             BUCKET_URL,
             params={"list-type": "2", "prefix": f"{run_prefix(run)}WRFDETAR_01H"},
             timeout=30,
         )
-        response.raise_for_status()
         if count_hourly_files(response.text) >= RUN_HOURS:
             return run
     return None
@@ -149,14 +173,21 @@ class Supabase:
 
 
 def download_and_extract(
-    run: datetime, hour: int, places: list[dict], folder: Path, session: requests.Session
+    run: datetime, hour: int, places: list[dict], folder: Path
 ) -> list[dict]:
+    # Sesión propia: requests.Session no es thread-safe y el pool baja en paralelo.
     path = folder / f"{hour:03d}.nc"
-    with session.get(f"{BUCKET_URL}/{file_key(run, hour)}", stream=True, timeout=120) as response:
-        response.raise_for_status()
-        with open(path, "wb") as file:
-            for chunk in response.iter_content(chunk_size=1 << 20):
-                file.write(chunk)
+    with requests.Session() as download_session:
+        with get_with_retry(
+            download_session,
+            f"{BUCKET_URL}/{file_key(run, hour)}",
+            stream=True,
+            timeout=120,
+        ) as response:
+            with open(path, "wb") as file:
+                for chunk in response.iter_content(chunk_size=1 << 20):
+                    if chunk:
+                        file.write(chunk)
     try:
         return extract_rows(path, places, run)
     finally:
@@ -190,7 +221,7 @@ def ingest(now: datetime, db: Supabase, session: requests.Session) -> str:
         with tempfile.TemporaryDirectory() as folder:
             with ThreadPoolExecutor(max_workers=DOWNLOAD_WORKERS) as pool:
                 for result in pool.map(
-                    lambda hour: download_and_extract(run, hour, pending, Path(folder), session),
+                    lambda hour: download_and_extract(run, hour, pending, Path(folder)),
                     range(RUN_HOURS),
                 ):
                     rows.extend(result)

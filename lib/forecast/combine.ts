@@ -72,7 +72,9 @@ export function summarizeDays(
   // día → modelo → filas con su hora local
   const byDay = new Map<string, Map<string, (ForecastValues & { hour: number })[]>>();
   for (const row of rows) {
-    const { date, hour } = localDateParts(new Date(row.valid_time), timeZone);
+    const valid = new Date(row.valid_time);
+    if (Number.isNaN(valid.getTime())) continue;
+    const { date, hour } = localDateParts(valid, timeZone);
     if (date < today) continue;
     const byModel = byDay.get(date) ?? new Map();
     byDay.set(date, byModel);

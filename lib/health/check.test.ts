@@ -40,4 +40,13 @@ describe("evaluateHealth", () => {
     expect(isStale("2026-09-30T06:00:00Z", NOW)).toBe(false);
     expect(evaluateHealth([{ source: "x", last_ok_at: null, alerted_at: null }], NOW)).toHaveLength(1);
   });
+
+  it("una fecha de latido inválida cuenta como caída", () => {
+    expect(isStale("no-es-una-fecha", NOW)).toBe(true);
+    expect(
+      evaluateHealth([{ source: "open-meteo", last_ok_at: "???", alerted_at: null }], NOW),
+    ).toEqual([
+      expect.objectContaining({ source: "open-meteo", kind: "down" }),
+    ]);
+  });
 });
