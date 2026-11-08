@@ -45,8 +45,9 @@ async function loadLatestRows(supabase: Client, placeId: string, from: Date): Pr
       .range(start, start + PAGE - 1)
       .returns<LatestRow[]>();
     if (error) throw error;
-    rows.push(...data);
-    if (data.length < PAGE) return rows;
+    const page = data ?? [];
+    rows.push(...page);
+    if (page.length < PAGE) return rows;
   }
 }
 

@@ -102,4 +102,17 @@ describe("summarizeDays", () => {
     expect(day.gustHour).toBeNull();
     expect(day.precipitation).toBeNull();
   });
+
+  it("ignora filas con valid_time inválido", () => {
+    const days = summarizeDays(
+      [
+        { ...row("a", 30, 10, { temperature_c: 15 }), valid_time: "no-es-fecha" },
+        row("a", 30, 12, { temperature_c: 18 }),
+      ],
+      TZ,
+      NOW,
+    );
+    expect(days).toHaveLength(1);
+    expect(days[0].temperatureMax).toBe(18);
+  });
 });

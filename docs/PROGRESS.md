@@ -4,9 +4,9 @@ Actualizar al cerrar cada sesión. Máximo 40 líneas: lo viejo se resume.
 
 ## Estado
 
-- Hito en curso: **Hito 1b — Frases e ingreso sin mail** (PR abierto). Hito 1 mergeado; falta la prueba de Hugo en producción.
-- Último cambio: 2026-09-30
-- Rama activa: `hito-1b-frases-ingreso`
+- Hito en curso: **Hito 1b — Frases e ingreso sin mail** (mergeado). Hito 1 mergeado; falta la prueba de Hugo en producción.
+- Último cambio: 2026-11-08
+- Rama activa: `main`
 
 ## Hecho
 

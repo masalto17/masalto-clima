@@ -1,11 +1,13 @@
 from datetime import datetime, timezone
 
 import numpy as np
+import requests
 
 from ingest import (
     candidate_runs,
     count_hourly_files,
     file_key,
+    get_with_retry,
     nearest_grid_points,
 )
 
@@ -39,3 +41,48 @@ def test_nearest_grid_points():
 
     [(_, _, lejos)] = nearest_grid_points(lat, lon, [(-20.0, -60.0)])
     assert lejos > 100
+
+
+class _FakeResponse:
+    def __init__(self, status_code: int, text: str = ""):
+        self.status_code = status_code
+        self.text = text
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise requests.HTTPError(f"{self.status_code}")
+
+    def close(self):
+        pass
+
+
+def test_get_with_retry_reintenta_503(monkeypatch):
+    calls = {"n": 0}
+
+    def fake_get(self, url, **kwargs):  # noqa: ARG001
+        calls["n"] += 1
+        if calls["n"] < 3:
+            return _FakeResponse(503)
+        return _FakeResponse(200, "ok")
+
+    monkeypatch.setattr(requests.Session, "get", fake_get)
+    monkeypatch.setattr("ingest.time.sleep", lambda _seconds: None)
+    response = get_with_retry(requests.Session(), "https://example.test")
+    assert response.status_code == 200
+    assert calls["n"] == 3
+
+
+def test_get_with_retry_no_reintenta_404(monkeypatch):
+    calls = {"n": 0}
+
+    def fake_get(self, url, **kwargs):  # noqa: ARG001
+        calls["n"] += 1
+        return _FakeResponse(404)
+
+    monkeypatch.setattr(requests.Session, "get", fake_get)
+    try:
+        get_with_retry(requests.Session(), "https://example.test")
+        raise AssertionError("tenía que fallar")
+    except requests.HTTPError:
+        pass
+    assert calls["n"] == 1

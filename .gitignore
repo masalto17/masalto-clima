@@ -3,6 +3,8 @@
 
 # testing
 /coverage
+__pycache__/
+*.pyc
 
 # next.js
 /.next/

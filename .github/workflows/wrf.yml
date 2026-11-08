@@ -18,9 +18,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v6
         with:
+          version: "0.13.7"
           python-version: "3.12"
           enable-cache: true
           cache-dependency-glob: workers/wrf/requirements.txt

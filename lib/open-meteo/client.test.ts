@@ -100,6 +100,19 @@ describe("parseForecastResponse", () => {
   it("falla si la cantidad de lugares no coincide", () => {
     expect(() => parseForecastResponse([location()], places, runTime)).toThrow(/lugares/);
   });
+
+  it("falla si el cuerpo no es un objeto", () => {
+    expect(() => parseForecastResponse(null, places, runTime)).toThrow(/inválida/);
+    expect(() => parseForecastResponse("no-json", [places[0]], runTime)).toThrow(/inválida/);
+  });
+
+  it("saltea horas con timestamp inválido", () => {
+    const broken = location();
+    (broken.hourly.time as unknown[])[1] = "no-es-unix";
+    const rows = parseForecastResponse(broken, [places[0]], runTime);
+    expect(rows).toHaveLength(OPEN_METEO_MODELS.length);
+    expect(rows.every((row) => row.valid_time === "2026-09-30T00:00:00.000Z")).toBe(true);
+  });
 });
 
 describe("fetchForecasts", () => {
@@ -114,5 +127,12 @@ describe("fetchForecasts", () => {
     const fetchFn = vi.fn();
     expect(await fetchForecasts([], { now: new Date(), fetchFn })).toEqual([]);
     expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it("falla sin exponer el cuerpo si la respuesta no es JSON", async () => {
+    const fetchFn = vi.fn().mockResolvedValue(new Response("no-json", { status: 200 }));
+    await expect(fetchForecasts(places, { now: new Date(), fetchFn })).rejects.toThrow(
+      "Open-Meteo: respuesta no JSON",
+    );
   });
 });

@@ -13,10 +13,11 @@ Deno.serve(async (request) => {
   const now = new Date();
 
   try {
-    const { data: places, error: placesError } = await supabase
+    const { data: placesData, error: placesError } = await supabase
       .from("places")
       .select("id, lat, lon");
     if (placesError) throw placesError;
+    const places = placesData ?? [];
 
     const rows = await fetchForecasts(places, {
       now,

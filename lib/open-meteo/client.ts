@@ -11,6 +11,8 @@ export const OPEN_METEO_MODELS = [
 ] as const;
 
 export const FORECAST_DAYS = 7;
+/** Tope para no dejar colgada la Edge Function ni el cron si Open-Meteo no responde. */
+const FETCH_TIMEOUT_MS = 45_000;
 
 const VARIABLES = {
   temperature_2m: "temperature_c",
@@ -55,12 +57,19 @@ export function buildForecastUrl(places: PlacePoint[], apiKey?: string): string 
   return `https://${host}/v1/forecast?${params.toString()}`;
 }
 
+function asHourlyValue(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
 /** Convierte la respuesta de Open-Meteo en filas de `forecasts`. */
 export function parseForecastResponse(
   body: unknown,
   places: PlacePoint[],
   runTime: string,
 ): ForecastRow[] {
+  if (body == null || typeof body !== "object") {
+    throw new Error("Open-Meteo: respuesta inválida");
+  }
   // Con un solo lugar la API devuelve un objeto; con varios, una lista en el mismo orden.
   const locations = (Array.isArray(body) ? body : [body]) as OpenMeteoLocation[];
   if (locations.length !== places.length) {
@@ -71,22 +80,25 @@ export function parseForecastResponse(
 
   const rows: ForecastRow[] = [];
   locations.forEach((location, index) => {
-    const hourly = location.hourly;
+    const place = places[index];
+    if (!place) throw new Error("Open-Meteo: lugar faltante en la respuesta");
+    const hourly = location?.hourly;
     if (!hourly?.time) throw new Error("Open-Meteo: respuesta sin datos horarios");
 
     for (const model of OPEN_METEO_MODELS) {
       hourly.time.forEach((unixSeconds, hour) => {
+        if (typeof unixSeconds !== "number" || !Number.isFinite(unixSeconds)) return;
         const values = {} as Record<VariableColumn, number | null>;
         let hasData = false;
         for (const [variable, column] of Object.entries(VARIABLES)) {
-          const value = hourly[`${variable}_${model}`]?.[hour] ?? null;
+          const value = asHourlyValue(hourly[`${variable}_${model}`]?.[hour]);
           values[column] = value;
           if (value !== null) hasData = true;
         }
         // Los modelos de menor alcance traen nulos al final: no se guardan.
         if (!hasData) return;
         rows.push({
-          place_id: places[index].id,
+          place_id: place.id,
           source: "open-meteo",
           model,
           run_time: runTime,
@@ -105,10 +117,26 @@ export async function fetchForecasts(
 ): Promise<ForecastRow[]> {
   if (places.length === 0) return [];
   const fetchFn = options.fetchFn ?? fetch;
-  const response = await fetchFn(buildForecastUrl(places, options.apiKey));
+  let response: Response;
+  try {
+    response = await fetchFn(buildForecastUrl(places, options.apiKey), {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "TimeoutError") {
+      throw new Error("Open-Meteo falló: tiempo de espera agotado");
+    }
+    throw error;
+  }
   if (!response.ok) {
     // Sin la URL: puede llevar la clave.
     throw new Error(`Open-Meteo falló: HTTP ${response.status}`);
   }
-  return parseForecastResponse(await response.json(), places, runSlot(options.now));
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    throw new Error("Open-Meteo: respuesta no JSON");
+  }
+  return parseForecastResponse(body, places, runSlot(options.now));
 }

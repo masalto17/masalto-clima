@@ -9,8 +9,16 @@ import { LINK_CODE_TTL_MS, generateLinkCode, hashLinkCode } from "@/lib/telegram
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  let expectedSecret: string;
+  try {
+    expectedSecret = requireEnv("TELEGRAM_WEBHOOK_SECRET");
+  } catch (error) {
+    console.error("telegram webhook:", error instanceof Error ? error.message : error);
+    return new NextResponse(null, { status: 500 });
+  }
+
   const secret = request.headers.get("x-telegram-bot-api-secret-token");
-  if (!isValidSecret(secret, requireEnv("TELEGRAM_WEBHOOK_SECRET"))) {
+  if (!isValidSecret(secret, expectedSecret)) {
     return new NextResponse(null, { status: 401 });
   }
 
@@ -18,6 +26,9 @@ export async function POST(request: Request) {
   try {
     update = await request.json();
   } catch {
+    return new NextResponse(null, { status: 400 });
+  }
+  if (!update || typeof update !== "object" || Array.isArray(update)) {
     return new NextResponse(null, { status: 400 });
   }
 

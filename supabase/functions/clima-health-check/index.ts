@@ -3,13 +3,24 @@
 import { evaluateHealth } from "../../../lib/health/check.ts";
 import { createAdminClient, errorMessage, isCronRequest, requireEnv } from "../_shared/cron.ts";
 
+const SEND_TIMEOUT_MS = 15_000;
+
 async function sendMessage(chatId: string, text: string): Promise<void> {
   const token = requireEnv("CLIMA_TELEGRAM_BOT_TOKEN");
-  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
+      signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "TimeoutError") {
+      throw new Error("Telegram sendMessage falló: tiempo de espera agotado");
+    }
+    throw error;
+  }
   // Sin la URL en el error: contiene el token.
   if (!response.ok) throw new Error(`Telegram sendMessage falló: HTTP ${response.status}`);
 }
@@ -21,20 +32,22 @@ Deno.serve(async (request) => {
   const now = new Date();
 
   try {
-    const { data: sources, error: sourcesError } = await supabase
+    const { data: sourcesData, error: sourcesError } = await supabase
       .from("system_health")
       .select("source, last_ok_at, alerted_at");
     if (sourcesError) throw sourcesError;
+    const sources = sourcesData ?? [];
 
     const actions = evaluateHealth(sources, now);
     if (actions.length === 0) return Response.json({ ok: true, actions: [] });
 
-    const { data: channels, error: channelsError } = await supabase
+    const { data: channelsData, error: channelsError } = await supabase
       .from("channels")
       .select("external_id")
       .eq("kind", "telegram")
       .eq("active", true);
     if (channelsError) throw channelsError;
+    const channels = channelsData ?? [];
 
     const done: string[] = [];
     for (const action of actions) {

@@ -25,7 +25,11 @@ export function sourceLabel(source: string): string {
 }
 
 export function isStale(lastOkAt: string | null, now: Date): boolean {
-  return lastOkAt === null || now.getTime() - new Date(lastOkAt).getTime() > STALE_AFTER_MS;
+  if (lastOkAt === null) return true;
+  const then = new Date(lastOkAt).getTime();
+  // Fecha inválida = no hay latido usable: se trata como caída.
+  if (Number.isNaN(then)) return true;
+  return now.getTime() - then > STALE_AFTER_MS;
 }
 
 /**

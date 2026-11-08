@@ -15,11 +15,17 @@ export async function entrarConLink(formData: FormData) {
   const { data: profileId, error } = await admin.rpc("redeem_web_login", {
     p_token_hash: hashLinkCode(token),
   });
-  if (error) throw error;
+  if (error) {
+    console.error("redeem_web_login:", error.message);
+    redirect("/entrar?error=link");
+  }
   if (!profileId) redirect("/entrar?error=link");
 
   const { data: userData, error: userError } = await admin.auth.admin.getUserById(profileId);
-  if (userError) throw userError;
+  if (userError || !userData?.user) {
+    console.error("getUserById:", userError?.message ?? "sin usuario");
+    redirect("/entrar?error=link");
+  }
   const email = userData.user.email?.toLowerCase();
   // Mismas reglas que el ingreso por mail: Auth se comparte con Handy.
   if (!email || !userData.user.email_confirmed_at || !allowedEmails().includes(email)) {
@@ -31,7 +37,10 @@ export async function entrarConLink(formData: FormData) {
     type: "magiclink",
     email,
   });
-  if (linkError) throw linkError;
+  if (linkError || !link?.properties?.hashed_token) {
+    console.error("generateLink:", linkError?.message ?? "sin token");
+    redirect("/entrar?error=link");
+  }
 
   const session = await createSessionClient();
   const { error: verifyError } = await session.auth.verifyOtp({
