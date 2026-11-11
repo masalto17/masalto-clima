@@ -8,7 +8,7 @@ const NOW = new Date("2026-09-30T15:00:00Z");
 const overview: Overview = {
   places: [
     {
-      place: { id: "sj", name: "San Juan Ciudad", timezone: "America/Argentina/San_Juan" },
+      place: { id: "sj", name: "San Juan Ciudad", timezone: "America/Argentina/San_Juan", lat: -31.5375, lon: -68.5364 },
       sources: ["open-meteo", "smn-wrf"],
       hourlyToday: [],
       hourlyTomorrow: [],

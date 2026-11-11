@@ -26,14 +26,14 @@ function day(date: string, overrides: Partial<DaySummary> = {}): DaySummary {
 const overview: Overview = {
   places: [
     {
-      place: { id: "sj", name: "San Juan Ciudad", timezone: "America/Argentina/San_Juan" },
+      place: { id: "sj", name: "San Juan Ciudad", timezone: "America/Argentina/San_Juan", lat: -31.5375, lon: -68.5364 },
       sources: ["open-meteo", "smn-wrf"],
       hourlyToday: [],
       hourlyTomorrow: [],
       days: [day("2026-09-30"), day("2026-10-01", { gustMax: 80, gustHour: 15 })],
     },
     {
-      place: { id: "va", name: "Córdoba Villa Allende", timezone: "America/Argentina/Cordoba" },
+      place: { id: "va", name: "Córdoba Villa Allende", timezone: "America/Argentina/Cordoba", lat: -31.29362, lon: -64.29762 },
       sources: ["open-meteo"],
       hourlyToday: [],
       hourlyTomorrow: [],

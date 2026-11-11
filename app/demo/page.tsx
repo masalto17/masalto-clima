@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { localDateParts, type DaySummary } from "@/lib/forecast/combine";
 import type { HourlySummary } from "@/lib/forecast/hourly";
 import type { Overview } from "@/lib/forecast/queries";
+import type { OfficialAlertsResult } from "@/lib/smn/load";
 import { Shell, VistaGeneral } from "../vista-general";
 
 export const dynamic = "force-dynamic";
@@ -54,7 +55,7 @@ export default function DemoPage() {
   const tomorrow = addDays(today, 1);
   const overview: Overview = {
     places: [{
-      place: { id: "demo", name: "Estadio San Juan del Bicentenario · DEMO", timezone: TZ },
+      place: { id: "demo", name: "Estadio San Juan del Bicentenario · DEMO", timezone: TZ, lat: -31.61195, lon: -68.52818 },
       days: [demoDay(today, false), demoDay(tomorrow, true)],
       hourlyToday: [],
       hourlyTomorrow: Array.from({ length: 24 }, (_, hour) => demoHour(hour)),
@@ -62,13 +63,32 @@ export default function DemoPage() {
     }],
     health: [{ source: "open-meteo", last_ok_at: now.toISOString() }],
   };
+  const officialAlerts: OfficialAlertsResult = {
+    state: "ok",
+    checkedAt: now.toISOString(),
+    indexPublishedAt: now.toISOString(),
+    byPlace: {
+      demo: [{
+        id: "demo-zonda",
+        event: "Viento Zonda",
+        headline: "Ejemplo de aviso oficial de Zonda",
+        description: "Texto ficticio para revisar el diseño. No corresponde a una alerta vigente.",
+        severity: "Moderate",
+        sentAt: now.toISOString(),
+        startsAt: `${tomorrow}T21:00:00Z`,
+        expiresAt: `${addDays(tomorrow, 1)}T03:00:00Z`,
+        sourceUrl: "",
+        demo: true,
+      }],
+    },
+  };
 
   return (
     <Shell>
       <p role="alert" className="rounded-xl border-2 border-brand p-4 font-bold">
         DEMOSTRACIÓN CON DATOS FICTICIOS. No es un pronóstico ni una alerta vigente.
       </p>
-      <VistaGeneral overview={overview} now={now} />
+      <VistaGeneral overview={overview} officialAlerts={officialAlerts} now={now} />
     </Shell>
   );
 }

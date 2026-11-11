@@ -1,5 +1,6 @@
 import { allowedEmails } from "@/lib/env";
 import { loadOverview } from "@/lib/forecast/queries";
+import { loadOfficialAlerts } from "@/lib/smn/load";
 import { createSessionClient } from "@/lib/supabase/server";
 import { ingresar } from "./actions";
 import { Shell, VistaGeneral } from "./vista-general";
@@ -54,10 +55,11 @@ export default async function Home({
 
   const now = new Date();
   const overview = await loadOverview(supabase, now);
+  const officialAlerts = await loadOfficialAlerts(overview.places.map(({ place }) => place), now);
 
   return (
     <Shell email={email}>
-      <VistaGeneral overview={overview} now={now} />
+      <VistaGeneral overview={overview} officialAlerts={officialAlerts} now={now} />
     </Shell>
   );
 }

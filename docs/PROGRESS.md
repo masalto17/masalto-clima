@@ -4,7 +4,7 @@ Actualizar al cerrar cada sesión. Máximo 40 líneas: lo viejo se resume.
 
 ## Estado
 
-- Hito en curso: **Hito 2 — Backtest**, diagnóstico y vista horaria de prueba; todavía sin medir aciertos.
+- Hito en curso: **Hito 2 — Backtest**, diagnóstico y vista horaria de prueba; todavía sin medir aciertos. PR #7 en borrador.
 - Última revisión: 2026-11-11. Rama: `hito-2-backtest`, basada en `origin/main` (`6618364`, PR #5).
 - Producción READY y página pública HTTP 200; falta probar la sesión de Hugo en su celular. Demo ficticia sólo en vista previa, comprobada a 390 px.
 
@@ -26,15 +26,15 @@ Actualizar al cerrar cada sesión. Máximo 40 líneas: lo viejo se resume.
 ## Pendiente / bloqueos
 
 - Estadio: hay versiones guardadas a 24 y 48 h para las 168 horas previas al 11/11. Primer contraste con 120 horas de viento medido en SANU (a 11,3 km) en cinco días; error y límites en `docs/backtest.md`, observaciones en `docs/refs/`. La rama muestra detalle horario de mañana y excluye fuentes con más de 6 h sin actualizar.
+- La rama incorpora lectura CAP del SMN para lugares guardados: punto contra polígono/círculo, vigencia, actualización/cancelación y fuente original. Consulta acotada a 16 XML por visita y 2 simultáneos por respuestas 429 del SMN; si hay documentos sin revisar, la web indica cobertura parcial y remite al SMN. No usarla como garantía de ausencia de alertas ni para avisos automáticos hasta resolver la cobertura.
 - WRF llevaba 8 h 14 min sin actualizar a las 21:12 UTC del 11/11; aviso registrado a las 19:00 UTC. Se recuperó a las 21:35 UTC con la corrida de las 18:00 UTC. Vigilar intervalos largos entre ejecuciones.
 - Plan gratuito de Open-Meteo es no comercial: contratar el plan y cargar `CLIMA_OPEN_METEO_API_KEY` antes de uso comercial.
-- Confirmar inicio y fin de los episodios y obtener observaciones del predio, lluvia y Zonda. Sin bitácora de alertas no se pueden medir avisos reales ni falsas alarmas. Falta probar `/web` con datos reales en celular, elegir canal visible, y desarrollar detector Zonda y alertas CAP integradas.
+- Confirmar inicio y fin de los episodios y obtener observaciones del predio, lluvia y Zonda. Sin bitácora de alertas no se pueden medir avisos reales ni falsas alarmas. Falta probar `/web` con datos reales en celular, completar cobertura CAP y desarrollar detector Zonda.
 ## Decisiones
-
 - 2026-11-11: prioridad Fiesta del Sol: avisos meteorológicos por lugar y hora para organizar personal y asegurar materiales sueltos. Umbrales de estructuras no bloquean esta etapa. Futuro: varios eventos con ubicación, calendario y avisos separados. Medir antes de ajustar la combinación; usar `ingested_at` para anticipación real.
+- 2026-11-11: WhatsApp es el canal deseado para futuros avisos; revisar integración oficial, coexistencia y costos antes de implementarlo. No hubo envíos ni contratación.
 - 2026-09-30: Hugo quiere app simple en lenguaje natural. Suma al MVP: frases en lugar de tablas, ingreso sin mail desde el bot (Hito 1b) y elegir qué seguir (Hito 3). Push en app y web → Fase 2. Vocabulario de viento: escala de Beaufort (OMM), no es umbral de riesgo.
 - 2026-09-30: clima vive en el esquema `clima` del proyecto Supabase `handy`. **Nunca `supabase db push` ni `supabase pull`**; migraciones con `pnpm db:migrate`.
-- 2026-09-30: Edge Functions y secretos con prefijo `clima-`/`CLIMA_` (proyecto compartido). Se publican sin JWT y validan `x-clima-cron-secret` (Vault + secreto de función).
-- 2026-09-30: Open-Meteo no informa la corrida por modelo → `run_time` = franja de 6 h UTC de la consulta (unas 10.000 filas por día con 3 lugares).
+- 2026-09-30: Edge Functions y secretos usan prefijo `clima-`/`CLIMA_` y validan `x-clima-cron-secret`; Open-Meteo no informa corrida por modelo → `run_time` = franja de 6 h UTC.
 - 2026-09-30: `observations` y alertas de zona en pantalla quedan para los hitos que las usan (2 a 4); en el Hito 1 solo se verificó disponibilidad.
 - 2026-09-30: un modelo sin corrida en 24 h sale del combinado; WRF en error si su última corrida tiene más de 12 h.

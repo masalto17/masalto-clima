@@ -4,7 +4,7 @@ import { localDateParts, summarizeDays, type DaySummary } from "./combine";
 import { summarizeHours, type HourlySummary } from "./hourly";
 import { isStale } from "../health/check";
 
-export type SavedPlace = { id: string; name: string; timezone: string };
+export type SavedPlace = { id: string; name: string; timezone: string; lat: number; lon: number };
 export type SourceStatus = { source: string; last_ok_at: string | null };
 
 export type PlaceForecast = {
@@ -72,7 +72,7 @@ export async function loadOverview(
 ): Promise<Overview> {
   let placesQuery = supabase
     .from("places")
-    .select("id, name, timezone")
+    .select("id, name, timezone, lat, lon")
     .eq("is_saved_place", true)
     .order("created_at")
     .order("name");

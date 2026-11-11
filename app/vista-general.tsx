@@ -4,6 +4,8 @@ import { dayPhrase, dayStatus, directionName, type DayStatus, type Tone } from "
 import { rainWindows, type HourlySummary } from "@/lib/forecast/hourly";
 import type { Overview, PlaceForecast } from "@/lib/forecast/queries";
 import { isStale, sourceLabel } from "@/lib/health/check";
+import type { OfficialAlert } from "@/lib/smn/cap";
+import type { OfficialAlertsResult } from "@/lib/smn/load";
 import { salir } from "./actions";
 
 export function Shell({ children, email }: { children: React.ReactNode; email?: string }) {
@@ -56,6 +58,47 @@ function rangoRafaga(day: DaySummary): string | null {
 }
 
 type Tarjeta = PlaceForecast & { hoy?: DaySummary; manana?: DaySummary };
+
+function localMoment(iso: string, timeZone: string): string {
+  return new Intl.DateTimeFormat("es-AR", {
+    timeZone, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).format(new Date(iso));
+}
+
+function AlertasOficiales({ alerts, state, checkedAt, timeZone }: {
+  alerts: OfficialAlert[];
+  state: OfficialAlertsResult["state"];
+  checkedAt: string;
+  timeZone: string;
+}) {
+  return (
+    <div className="rounded-lg border border-brand/50 p-3 text-sm">
+      <h3 className="font-bold">Alertas oficiales del SMN</h3>
+      {state !== "ok" && (
+        <p role="alert" className="font-semibold">
+          {state === "unavailable"
+            ? "No se pudieron verificar las alertas oficiales ahora."
+            : "La consulta oficial fue parcial; pueden faltar alertas."}{" "}
+          <a className="underline" href="https://www.smn.gob.ar/alertas" target="_blank" rel="noopener noreferrer">Consultá el SMN</a>.
+        </p>
+      )}
+      {alerts.length === 0 && state === "ok" && (
+        <p>No apareció una alerta aplicable a este punto en el índice consultado. Esto no confirma ausencia de riesgo.</p>
+      )}
+      {alerts.map((alert) => (
+        <article key={alert.id} className="mt-2 border-t border-current/15 pt-2">
+          <p className="font-bold">{alert.demo ? "DEMO ficticia · " : ""}{alert.headline}</p>
+          <p>Evento: {alert.event}{alert.severity && ` · Severidad oficial: ${alert.severity}`}</p>
+          <p>Desde {localMoment(alert.startsAt, timeZone)} hasta {localMoment(alert.expiresAt, timeZone)}.</p>
+          <p>Emitida {localMoment(alert.sentAt, timeZone)}.</p>
+          {alert.description && <p>{alert.description}</p>}
+          {!alert.demo && <a className="underline" href={alert.sourceUrl} target="_blank" rel="noopener noreferrer">Ver aviso CAP original</a>}
+        </article>
+      ))}
+      <p className="mt-2 text-xs opacity-70">Índice consultado: {localMoment(checkedAt, timeZone)} · Fuente: SMN. El pronóstico por modelos aparece aparte.</p>
+    </div>
+  );
+}
 
 function range(low: number | null, high: number | null, unit: string): string {
   if (low === null || high === null) return "sin dato";
@@ -121,18 +164,18 @@ function Momento({ titulo, day }: { titulo: string; day?: DaySummary }) {
   );
 }
 
-function Lugar({ place, days, sources, hourlyTomorrow, hoy, manana }: Tarjeta) {
+function Lugar({ place, days, sources, hourlyTomorrow, hoy, manana, official }: Tarjeta & { official: OfficialAlertsResult }) {
   const resto = days.filter((day) => day !== hoy && day !== manana);
   return (
     <section className="flex flex-col gap-4 rounded-xl border border-current/15 p-4">
       <h2 className="text-xl font-bold">{place.name}</h2>
+      <AlertasOficiales alerts={official.byPlace[place.id] ?? []} state={official.state} checkedAt={official.checkedAt} timeZone={place.timezone} />
       <Momento titulo="Hoy" day={hoy} />
       <Momento titulo="Mañana" day={manana} />
       <HorasDeManana hours={hourlyTomorrow} />
       {place.timezone === "America/Argentina/San_Juan" && (
         <p className="text-sm opacity-70">
-          Zonda: esta vista todavía no lo identifica. Revisá también las{" "}
-          <a className="underline" href="https://www.smn.gob.ar/alertas" target="_blank" rel="noopener noreferrer">alertas oficiales del SMN</a>.
+          Zonda: esta vista sólo lo identifica cuando hay un aviso oficial aplicable del SMN; todavía no tiene detector propio.
         </p>
       )}
       {resto.length > 0 && (
@@ -161,7 +204,7 @@ function Lugar({ place, days, sources, hourlyTomorrow, hoy, manana }: Tarjeta) {
   );
 }
 
-export function VistaGeneral({ overview, now }: { overview: Overview; now: Date }) {
+export function VistaGeneral({ overview, officialAlerts, now }: { overview: Overview; officialAlerts: OfficialAlertsResult; now: Date }) {
   if (overview.places.length === 0) {
     return (
       <p>
@@ -199,7 +242,7 @@ export function VistaGeneral({ overview, now }: { overview: Overview; now: Date 
         </p>
       )}
       {tarjetas.map((tarjeta) => (
-        <Lugar key={tarjeta.place.id} {...tarjeta} />
+        <Lugar key={tarjeta.place.id} {...tarjeta} official={officialAlerts} />
       ))}
       <footer className="flex flex-col gap-1 border-t border-current/20 pt-3 text-xs opacity-60">
         <p>
