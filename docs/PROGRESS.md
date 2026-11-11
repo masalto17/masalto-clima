@@ -4,9 +4,9 @@ Actualizar al cerrar cada sesión. Máximo 40 líneas: lo viejo se resume.
 
 ## Estado
 
-- Hito en curso: **Hito 1b — Frases e ingreso sin mail** (mergeado). Hito 1 mergeado; falta la prueba de Hugo en producción.
-- Último cambio: 2026-11-08
-- Rama activa: `main`
+- Hito en curso: **Hito 2 — Backtest**, diagnóstico preparado; todavía sin medir aciertos.
+- Última revisión: 2026-11-11. Rama: `hito-2-backtest`, basada en `origin/main` (`6618364`, PR #5).
+- Producción READY y página pública HTTP 200; falta probar la sesión de Hugo en su celular.
 
 ## Hecho
 
@@ -25,14 +25,14 @@ Actualizar al cerrar cada sesión. Máximo 40 líneas: lo viejo se resume.
 
 ## Pendiente / bloqueos
 
-- Hugo: probar en producción después del merge (`/semana` en el bot y la web con su mail). `wrf.yml` recién corre programado cuando está en `main`.
+- Estadio: hay versiones guardadas a 24 y 48 h para las 168 horas previas al 11/11, por fuente. Extracción comprobada en `scripts/backtest-snapshots.sql`; método y límites en `docs/backtest.md`.
+- WRF llevaba 8 h 14 min sin actualizar a las 21:12 UTC del 11/11; aviso registrado a las 19:00 UTC. Investigar causa y recuperación.
 - Plan gratuito de Open-Meteo es no comercial: contratar el plan y cargar `CLIMA_OPEN_METEO_API_KEY` antes de uso comercial.
-- ¿Handy acepta webhook? · Umbrales por estructura (`umbrales_estructuras.csv`) · Eventos para el backtest (`backtest_eventos.csv`).
-
+- Completar 3 a 5 episodios verificables y observaciones; sin tablas de observaciones ni alertas no se pueden medir avisos reales. Falta probar `/web` en celular y elegir canal visible. Hoy no hay ventanas horarias, detector Zonda ni alertas CAP integradas.
 ## Decisiones
 
+- 2026-11-11: prioridad Fiesta del Sol: avisos meteorológicos por lugar y hora para organizar personal y asegurar materiales sueltos. Umbrales de estructuras no bloquean esta etapa. Futuro: varios eventos con ubicación, calendario y avisos separados. Medir antes de ajustar la combinación; usar `ingested_at` para anticipación real.
 - 2026-09-30: Hugo quiere app simple en lenguaje natural. Suma al MVP: frases en lugar de tablas, ingreso sin mail desde el bot (Hito 1b) y elegir qué seguir (Hito 3). Push en app y web → Fase 2. Vocabulario de viento: escala de Beaufort (OMM), no es umbral de riesgo.
-
 - 2026-09-30: clima vive en el esquema `clima` del proyecto Supabase `handy`. **Nunca `supabase db push` ni `supabase pull`**; migraciones con `pnpm db:migrate`.
 - 2026-09-30: Edge Functions y secretos con prefijo `clima-`/`CLIMA_` (proyecto compartido). Se publican sin JWT y validan `x-clima-cron-secret` (Vault + secreto de función).
 - 2026-09-30: Open-Meteo no informa la corrida por modelo → `run_time` = franja de 6 h UTC de la consulta (unas 10.000 filas por día con 3 lugares).
