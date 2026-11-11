@@ -6,7 +6,7 @@ Actualizar al cerrar cada sesión. Máximo 40 líneas: lo viejo se resume.
 
 - Hito en curso: **Hito 2 — Backtest**, diagnóstico y vista horaria de prueba; todavía sin medir aciertos.
 - Última revisión: 2026-11-11. Rama: `hito-2-backtest`, basada en `origin/main` (`6618364`, PR #5).
-- Producción READY y página pública HTTP 200; falta probar la sesión de Hugo en su celular.
+- Producción READY y página pública HTTP 200; falta probar la sesión de Hugo en su celular. Demo ficticia sólo en vista previa, comprobada a 390 px.
 
 ## Hecho
 

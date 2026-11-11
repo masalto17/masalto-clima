@@ -64,6 +64,12 @@ function range(low: number | null, high: number | null, unit: string): string {
   return `${a === b ? a : `${a}–${b}`} ${unit}`;
 }
 
+function hourlyRain(hour: HourlySummary): string {
+  if (hour.rainDataModels === 0) return "Lluvia sin dato";
+  if (hour.rainModels === 0) return `Sin lluvia en ${hour.rainDataModels} modelos`;
+  return `Lluvia en ${hour.rainModels} de ${hour.rainDataModels} modelos, hasta ${range(hour.rainHigh, hour.rainHigh, "mm/h")}`;
+}
+
 function HorasDeManana({ hours }: { hours: HourlySummary[] }) {
   if (hours.length === 0) return <p className="text-sm">Sin pronóstico horario para mañana.</p>;
   const withWind = hours.filter((hour) => hour.windHigh !== null);
@@ -93,7 +99,7 @@ function HorasDeManana({ hours }: { hours: HourlySummary[] }) {
               <strong>{String(hour.hour).padStart(2, "0")}:00</strong> · Viento {range(hour.windLow, hour.windHigh, "km/h")}
               {hour.windDirection !== null && ` del ${directionName(hour.windDirection)}`}
               {hour.gustHigh !== null && ` · Ráfagas ${range(hour.gustLow, hour.gustHigh, "km/h")}`}
-              {hour.rainDataModels > 0 && ` · Lluvia: ${hour.rainModels} de ${hour.rainDataModels} modelos, hasta ${range(hour.rainHigh, hour.rainHigh, "mm/h")}`}
+              {` · ${hourlyRain(hour)}`}
             </li>
           ))}
         </ul>
