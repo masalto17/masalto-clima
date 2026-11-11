@@ -41,13 +41,12 @@ export async function POST(request: Request) {
       findLinked: async (chatId) => {
         const { data, error } = await supabase
           .from("channels")
-          .select("organization_id, profile_id, profiles(full_name)")
+          .select("organization_id, profiles(full_name)")
           .eq("kind", "telegram")
           .eq("external_id", chatId)
           .eq("active", true)
           .maybeSingle<{
             organization_id: string;
-            profile_id: string;
             profiles: { full_name: string } | null;
           }>();
         if (error) throw error;
@@ -55,25 +54,9 @@ export async function POST(request: Request) {
         return {
           name: data.profiles.full_name,
           organizationId: data.organization_id,
-          profileId: data.profile_id,
         };
       },
       loadOverview: (organizationId, now) => loadOverview(supabase, now, organizationId),
-      createWebLogin: async (profileId) => {
-        const token = generateLinkCode();
-        // De paso, limpia los tokens vencidos hace más de un día.
-        await supabase
-          .from("web_login_tokens")
-          .delete()
-          .lt("expires_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
-        const { error } = await supabase.from("web_login_tokens").insert({
-          token_hash: hashLinkCode(token),
-          profile_id: profileId,
-          expires_at: new Date(Date.now() + LINK_CODE_TTL_MS).toISOString(),
-        });
-        if (error) throw error;
-        return token;
-      },
       createLinkCode: async (chatId, displayName) => {
         const code = generateLinkCode();
         const { error } = await supabase.from("channel_link_codes").insert({

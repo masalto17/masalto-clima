@@ -38,9 +38,8 @@ function deps(linkedName: string | null) {
     findLinked: vi
       .fn()
       .mockResolvedValue(
-        linkedName ? { name: linkedName, organizationId: "org-1", profileId: "perfil-1" } : null,
+        linkedName ? { name: linkedName, organizationId: "org-1" } : null,
       ),
-    createWebLogin: vi.fn().mockResolvedValue("token-web"),
     loadOverview: vi.fn().mockResolvedValue(overview),
     createLinkCode: vi.fn().mockResolvedValue("codigo-1"),
     sendMessage: vi.fn().mockResolvedValue(undefined),
@@ -86,16 +85,14 @@ describe("handleUpdate", () => {
     await handleUpdate(update("/web"), d);
     expect(d.sendMessage).not.toHaveBeenCalled();
     expect(d.loadOverview).not.toHaveBeenCalled();
-    expect(d.createWebLogin).not.toHaveBeenCalled();
   });
 
-  it("con /web manda un link de ingreso para su perfil", async () => {
+  it("con /web manda la página pública sin token", async () => {
     const d = deps("Hugo");
     await handleUpdate(update("/web"), d);
-    expect(d.createWebLogin).toHaveBeenCalledWith("perfil-1");
     expect(d.sendMessage).toHaveBeenCalledWith(
       "42",
-      expect.stringContaining("https://clima.test/entrar?t=token-web"),
+      expect.stringContaining("https://clima.test"),
     );
   });
 

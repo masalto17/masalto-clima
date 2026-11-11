@@ -24,7 +24,7 @@ export function helpText(name: string): string {
     "Probá:",
     "/semana — la semana de tus lugares guardados",
     "/semana San Juan — la semana de un lugar",
-    "/web — abrir la web sin poner el mail",
+    "/web — abrir la página pública del clima",
     "O preguntame: ¿viento mañana en el estadio? ¿llueve hoy en Córdoba?",
   ].join("\n");
 }
