@@ -25,10 +25,10 @@ Actualizar al cerrar cada sesión. Máximo 40 líneas: lo viejo se resume.
 
 ## Pendiente / bloqueos
 
-- Estadio: hay versiones guardadas a 24 y 48 h para las 168 horas previas al 11/11, por fuente. Extracción comprobada en `scripts/backtest-snapshots.sql`; método y límites en `docs/backtest.md`. La rama muestra detalle horario de mañana y excluye fuentes con más de 6 h sin actualizar.
-- WRF llevaba 8 h 14 min sin actualizar a las 21:12 UTC del 11/11; aviso registrado a las 19:00 UTC. Investigar causa y recuperación.
+- Estadio: hay versiones guardadas a 24 y 48 h para las 168 horas previas al 11/11. Primer contraste con 120 horas de viento medido en SANU (a 11,3 km) en cinco días; error y límites en `docs/backtest.md`, observaciones en `docs/refs/`. La rama muestra detalle horario de mañana y excluye fuentes con más de 6 h sin actualizar.
+- WRF llevaba 8 h 14 min sin actualizar a las 21:12 UTC del 11/11; aviso registrado a las 19:00 UTC. Se recuperó a las 21:35 UTC con la corrida de las 18:00 UTC. Vigilar intervalos largos entre ejecuciones.
 - Plan gratuito de Open-Meteo es no comercial: contratar el plan y cargar `CLIMA_OPEN_METEO_API_KEY` antes de uso comercial.
-- Completar 3 a 5 episodios verificables y observaciones; sin tablas de observaciones ni alertas no se pueden medir avisos reales. Falta probar `/web` y la vista horaria en celular, elegir canal visible, y desarrollar detector Zonda y alertas CAP integradas.
+- Confirmar inicio y fin de los episodios y obtener observaciones del predio, lluvia y Zonda. Sin bitácora de alertas no se pueden medir avisos reales ni falsas alarmas. Falta probar `/web` con datos reales en celular, elegir canal visible, y desarrollar detector Zonda y alertas CAP integradas.
 ## Decisiones
 
 - 2026-11-11: prioridad Fiesta del Sol: avisos meteorológicos por lugar y hora para organizar personal y asegurar materiales sueltos. Umbrales de estructuras no bloquean esta etapa. Futuro: varios eventos con ubicación, calendario y avisos separados. Medir antes de ajustar la combinación; usar `ingested_at` para anticipación real.
