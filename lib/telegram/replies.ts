@@ -24,7 +24,7 @@ export function helpText(name: string): string {
     "Probá:",
     "/semana — la semana de tus lugares guardados",
     "/semana San Juan — la semana de un lugar",
-    "/web — abrir la web sin poner el mail",
+    "/web — abrir la página pública del clima",
     "O preguntame: ¿viento mañana en el estadio? ¿llueve hoy en Córdoba?",
   ].join("\n");
 }
@@ -44,8 +44,9 @@ export function footer(overview: Overview, now: Date): string {
     );
   }
 
-  const usesSmn = overview.places.some((place) => place.sources.includes("smn-wrf"));
-  lines.push(usesSmn ? "Fuente: Open-Meteo y SMN." : "Fuente: Open-Meteo.");
+  const sources = new Set(overview.places.flatMap((place) => place.sources));
+  const labels = [sources.has("open-meteo") && "Open-Meteo", sources.has("smn-wrf") && "SMN"].filter(Boolean);
+  lines.push(`Fuente: ${labels.join(" y ") || "sin datos recientes"}.`);
   return lines.join("\n");
 }
 

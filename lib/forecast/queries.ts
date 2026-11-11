@@ -1,13 +1,17 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { summarizeDays, type DaySummary } from "./combine";
+import { localDateParts, summarizeDays, type DaySummary } from "./combine";
+import { summarizeHours, type HourlySummary } from "./hourly";
+import { isStale } from "../health/check";
 
-export type SavedPlace = { id: string; name: string; timezone: string };
+export type SavedPlace = { id: string; name: string; timezone: string; lat: number; lon: number };
 export type SourceStatus = { source: string; last_ok_at: string | null };
 
 export type PlaceForecast = {
   place: SavedPlace;
   days: DaySummary[];
+  hourlyToday: HourlySummary[];
+  hourlyTomorrow: HourlySummary[];
   /** Fuentes que aportan datos al combinado de este lugar. */
   sources: string[];
 };
@@ -51,6 +55,11 @@ async function loadLatestRows(supabase: Client, placeId: string, from: Date): Pr
   }
 }
 
+function addDays(date: string, days: number): string {
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+}
+
 /**
  * Lugares guardados con su pronóstico combinado y el latido de las fuentes.
  * Con el cliente de sesión, RLS limita a la organización del usuario; con el de
@@ -63,7 +72,7 @@ export async function loadOverview(
 ): Promise<Overview> {
   let placesQuery = supabase
     .from("places")
-    .select("id, name, timezone")
+    .select("id, name, timezone, lat, lon")
     .eq("is_saved_place", true)
     .order("created_at")
     .order("name");
@@ -76,14 +85,23 @@ export async function loadOverview(
   if (placesResult.error) throw placesResult.error;
   if (healthResult.error) throw healthResult.error;
 
+  // Un modelo de una fuente caída puede seguir dentro de las últimas 24 h de
+  // forecasts_latest. No mostrarlo como si acabara de actualizarse.
+  const healthySources = new Set(
+    healthResult.data.filter((status) => !isStale(status.last_ok_at, now)).map((status) => status.source),
+  );
+
   // Un día de margen: alcanza para arrancar en la medianoche local de hoy.
   const from = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const places = await Promise.all(
     placesResult.data.map(async (place) => {
-      const rows = await loadLatestRows(supabase, place.id, from);
+      const rows = (await loadLatestRows(supabase, place.id, from)).filter((row) => healthySources.has(row.source));
+      const today = localDateParts(now, place.timezone).date;
       return {
         place,
         days: summarizeDays(rows, place.timezone, now),
+        hourlyToday: summarizeHours(rows, place.timezone, today),
+        hourlyTomorrow: summarizeHours(rows, place.timezone, addDays(today, 1)),
         sources: [...new Set(rows.map((row) => row.source))].sort(),
       };
     }),

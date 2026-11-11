@@ -11,7 +11,7 @@ export type TelegramUpdate = {
   };
 };
 
-export type LinkedChat = { name: string; organizationId: string; profileId: string };
+export type LinkedChat = { name: string; organizationId: string };
 
 export type TelegramDeps = {
   /** Perfil vinculado al chat, o null si el chat no está vinculado. */
@@ -20,8 +20,6 @@ export type TelegramDeps = {
   loadOverview: (organizationId: string, now: Date) => Promise<Overview>;
   /** Crea un código de un solo uso para el chat y devuelve el código en claro. */
   createLinkCode: (chatId: string, displayName: string | null) => Promise<string>;
-  /** Crea un token de ingreso a la web de un solo uso y devuelve el token en claro. */
-  createWebLogin: (profileId: string) => Promise<string>;
   sendMessage: (chatId: string, text: string) => Promise<void>;
   appUrl: string;
 };
@@ -44,12 +42,7 @@ export async function handleUpdate(update: TelegramUpdate, deps: TelegramDeps): 
   if (linked) {
     const intent = parseIntent(message.text ?? "");
     if (intent.kind === "web") {
-      const token = await deps.createWebLogin(linked.profileId);
-      const link = `${deps.appUrl}/entrar?t=${encodeURIComponent(token)}`;
-      await deps.sendMessage(
-        chatId,
-        `Abrí este link para entrar a la web sin poner el mail (vale 10 minutos, un solo uso):\n${link}`,
-      );
+      await deps.sendMessage(chatId, `Abrí el clima directamente: ${deps.appUrl}`);
       return;
     }
     if (intent.kind === "help") {
