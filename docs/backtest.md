@@ -9,7 +9,7 @@ Fecha de revisión: 2026-11-11. Lugar prioritario: Estadio San Juan del Bicenten
 - A las 21:12 UTC del 11/11, Open-Meteo llevaba 8 minutos desde su último ingreso; WRF llevaba 8 h 14 min. La tabla `system_health` registró aviso de caída del WRF a las 19:00 UTC. Conviene investigar por qué la corrida WRF no se renueva; ese dato viejo no debe presentarse como actual.
 - El bot responde consultas y la web muestra un máximo diario de ráfagas con una hora puntual. No hay todavía avisos preventivos por episodio, detector de Zonda, alertas CAP del SMN integradas, probabilidad horaria de lluvia ni una ventana horaria de inicio y fin. El rótulo de viento usa Beaufort como vocabulario meteorológico, no como riesgo de estructuras.
 - No existen tablas de observaciones, alertas ni puntuación de modelos en producción. `docs/refs/backtest_eventos.csv` no tiene episodios. Por tanto no hay hoy una tasa defendible de aciertos, falsas alarmas o episodios perdidos.
-- El archivo de observaciones SMN del 11/11 responde y trae una única lectura visible de San Juan (18:00 UTC, viento sudeste de 9 km/h). El archivo pedido para el 09/11 devuelve «El archivo no existe», aunque el servidor responda HTTP 200. No se puede suponer que este enlace sirva como serie histórica horaria.
+- El archivo de observaciones SMN del 11/11 responde y trae una única lectura visible de San Juan (18:00, zona horaria aún no confirmada; viento sudeste de 9 km/h). El archivo pedido para el 09/11 devuelve «El archivo no existe», aunque el servidor responda HTTP 200. No se puede suponer que este enlace sirva como serie histórica horaria ni comparar horas hasta aclarar la zona horaria.
 
 ## Comparación preparada
 
@@ -27,3 +27,10 @@ Fecha de revisión: 2026-11-11. Lugar prioritario: Estadio San Juan del Bicenten
 4. Luego, permitir varios eventos simultáneos con ubicación, calendario, fases y avisos separados, reutilizando el mismo pronóstico por lugar. Para la primera entrega, concentrarse en Fiesta del Sol.
 
 Los avisos pedidos son meteorológicos y preventivos para organizar horarios y asegurar materiales sueltos. Los umbrales de resistencia de estructuras no bloquean este trabajo.
+
+## Versión de prueba en el PR #7
+
+- La web autenticada muestra mañana por hora local: el momento del mayor viento, rangos de viento y ráfagas entre modelos, dirección del modelo más intenso y tramos consecutivos donde al menos un modelo pronostica lluvia. El detalle de las 24 horas queda desplegable para consultar a demanda. No convierte cantidad de modelos en probabilidad ni el ejemplo de 60 km/h en umbral.
+- Las fuentes con más de 6 h sin actualizar quedan fuera del pronóstico combinado y del detalle horario. La página avisa qué fuente está atrasada y muestra cuáles aportan datos recientes. El bot conserva su consulta diaria y también identifica sólo las fuentes que aportan datos recientes.
+- Para lugares de San Juan, la vista aclara que aún no determina Zonda y dirige a las alertas oficiales del SMN. No clasifica Zonda sólo por dirección del viento.
+- Es una **vista de prueba**, no un envío de avisos. Falta validar con Hugo en su teléfono, medir el backtest, definir reglas de aviso meteorológico y elegir un canal visible antes de activar notificaciones.

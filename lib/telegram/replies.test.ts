@@ -28,11 +28,15 @@ const overview: Overview = {
     {
       place: { id: "sj", name: "San Juan Ciudad", timezone: "America/Argentina/San_Juan" },
       sources: ["open-meteo", "smn-wrf"],
+      hourlyToday: [],
+      hourlyTomorrow: [],
       days: [day("2026-09-30"), day("2026-10-01", { gustMax: 80, gustHour: 15 })],
     },
     {
       place: { id: "va", name: "Córdoba Villa Allende", timezone: "America/Argentina/Cordoba" },
       sources: ["open-meteo"],
+      hourlyToday: [],
+      hourlyTomorrow: [],
       days: [day("2026-09-30", { precipitation: 2, precipitationHigh: 11.6 })],
     },
   ],

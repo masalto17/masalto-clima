@@ -1,6 +1,7 @@
 import { localDateParts, type DaySummary } from "@/lib/forecast/combine";
 import { formatAgo, formatDayLabel } from "@/lib/forecast/format";
-import { dayPhrase, dayStatus, type DayStatus, type Tone } from "@/lib/forecast/phrases";
+import { dayPhrase, dayStatus, directionName, type DayStatus, type Tone } from "@/lib/forecast/phrases";
+import { rainWindows, type HourlySummary } from "@/lib/forecast/hourly";
 import type { Overview, PlaceForecast } from "@/lib/forecast/queries";
 import { isStale, sourceLabel } from "@/lib/health/check";
 import { salir } from "./actions";
@@ -56,6 +57,52 @@ function rangoRafaga(day: DaySummary): string | null {
 
 type Tarjeta = PlaceForecast & { hoy?: DaySummary; manana?: DaySummary };
 
+function range(low: number | null, high: number | null, unit: string): string {
+  if (low === null || high === null) return "sin dato";
+  const a = Math.round(low);
+  const b = Math.round(high);
+  return `${a === b ? a : `${a}–${b}`} ${unit}`;
+}
+
+function HorasDeManana({ hours }: { hours: HourlySummary[] }) {
+  if (hours.length === 0) return <p className="text-sm">Sin pronóstico horario para mañana.</p>;
+  const withWind = hours.filter((hour) => hour.windHigh !== null);
+  const peak = withWind.sort((a, b) => (b.windHigh ?? 0) - (a.windHigh ?? 0))[0];
+  const windows = rainWindows(hours);
+  const hasRainData = hours.some((hour) => hour.rainDataModels > 0);
+  return (
+    <div className="rounded-lg bg-foreground/5 p-3 text-sm">
+      <p className="font-semibold">Mañana, por hora</p>
+      {peak && (
+        <p>
+          Mayor viento previsto: {peak.hour}–{peak.hour + 1} h, {range(peak.windLow, peak.windHigh, "km/h")}.
+          {peak.windDirection !== null && ` Dirección del modelo más intenso: ${directionName(peak.windDirection)}.`}
+          {peak.gustHigh !== null && ` Ráfagas: ${range(peak.gustLow, peak.gustHigh, "km/h")}.`}
+        </p>
+      )}
+      <p>
+        {windows.length > 0
+          ? `Algún modelo indica lluvia: ${windows.map((window) => `${window.start}–${window.end + 1} h`).join(", ")}.`
+          : hasRainData ? "Ningún modelo disponible indica lluvia." : "Lluvia: sin datos horarios."}
+      </p>
+      <details className="mt-2">
+        <summary className="cursor-pointer font-semibold underline-offset-4 hover:underline">Ver todas las horas y modelos</summary>
+        <ul className="mt-2 max-h-80 overflow-y-auto">
+          {hours.map((hour) => (
+            <li key={hour.hour} className="border-t border-current/10 py-2">
+              <strong>{String(hour.hour).padStart(2, "0")}:00</strong> · Viento {range(hour.windLow, hour.windHigh, "km/h")}
+              {hour.windDirection !== null && ` del ${directionName(hour.windDirection)}`}
+              {hour.gustHigh !== null && ` · Ráfagas ${range(hour.gustLow, hour.gustHigh, "km/h")}`}
+              {hour.rainDataModels > 0 && ` · Lluvia: ${hour.rainModels} de ${hour.rainDataModels} modelos, hasta ${range(hour.rainHigh, hour.rainHigh, "mm/h")}`}
+            </li>
+          ))}
+        </ul>
+      </details>
+      <p className="mt-2 opacity-70">Los rangos y la cantidad de modelos muestran diferencias entre pronósticos; no son una probabilidad ni una medición en el predio.</p>
+    </div>
+  );
+}
+
 function Momento({ titulo, day }: { titulo: string; day?: DaySummary }) {
   return (
     <div className="flex flex-col gap-1">
@@ -68,13 +115,20 @@ function Momento({ titulo, day }: { titulo: string; day?: DaySummary }) {
   );
 }
 
-function Lugar({ place, days, sources, hoy, manana }: Tarjeta) {
+function Lugar({ place, days, sources, hourlyTomorrow, hoy, manana }: Tarjeta) {
   const resto = days.filter((day) => day !== hoy && day !== manana);
   return (
     <section className="flex flex-col gap-4 rounded-xl border border-current/15 p-4">
       <h2 className="text-xl font-bold">{place.name}</h2>
       <Momento titulo="Hoy" day={hoy} />
       <Momento titulo="Mañana" day={manana} />
+      <HorasDeManana hours={hourlyTomorrow} />
+      {place.timezone === "America/Argentina/San_Juan" && (
+        <p className="text-sm opacity-70">
+          Zonda: esta vista todavía no lo identifica. Revisá también las{" "}
+          <a className="underline" href="https://www.smn.gob.ar/alertas" target="_blank" rel="noopener noreferrer">alertas oficiales del SMN</a>.
+        </p>
+      )}
       {resto.length > 0 && (
         <details className="group">
           <summary className="cursor-pointer font-semibold underline-offset-4 hover:underline">
@@ -95,7 +149,7 @@ function Lugar({ place, days, sources, hoy, manana }: Tarjeta) {
         </details>
       )}
       <p className="text-xs opacity-60">
-        Fuente: {sources.includes("smn-wrf") ? "Open-Meteo y SMN" : "Open-Meteo"}.
+        Fuente reciente: {sources.length === 0 ? "ninguna" : sources.map((source) => source === "smn-wrf" ? "SMN" : "Open-Meteo").join(" y ")}.
       </p>
     </section>
   );
@@ -131,7 +185,9 @@ export function VistaGeneral({ overview, now }: { overview: Overview; now: Date 
     <>
       {(stale.length > 0 || overview.health.length === 0) && (
         <p role="alert" className="rounded-xl border-2 border-brand px-4 py-3 font-semibold">
-          Sistema sin datos, usar SMN.
+          {tarjetas.some((tarjeta) => tarjeta.sources.length > 0)
+            ? "Una fuente sin actualizar; el pronóstico usa sólo fuentes recientes. Consultá también al SMN."
+            : "Sistema sin datos, usar SMN."}
           {stale.length > 0 &&
             ` Sin actualizar hace más de 6 h: ${stale.map((status) => sourceLabel(status.source)).join(" y ")}.`}
         </p>
@@ -151,7 +207,7 @@ export function VistaGeneral({ overview, now }: { overview: Overview; now: Date 
             .join(" · ")}
         </p>
         <p>
-          Combina 6 modelos. Temperatura y lluvia: el valor del medio. Viento y ráfagas: el más alto
+          Combina hasta 6 modelos recientes. Temperatura y lluvia: el valor del medio. Viento y ráfagas: el más alto
           (peor caso). Nombres del viento según la escala de Beaufort. Datos: Open-Meteo (CC BY
           4.0) y Servicio Meteorológico Nacional (CC BY 2.5 AR).
         </p>

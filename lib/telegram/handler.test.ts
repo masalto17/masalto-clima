@@ -10,6 +10,8 @@ const overview: Overview = {
     {
       place: { id: "sj", name: "San Juan Ciudad", timezone: "America/Argentina/San_Juan" },
       sources: ["open-meteo", "smn-wrf"],
+      hourlyToday: [],
+      hourlyTomorrow: [],
       days: [
         {
           date: "2026-09-30",

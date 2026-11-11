@@ -44,8 +44,9 @@ export function footer(overview: Overview, now: Date): string {
     );
   }
 
-  const usesSmn = overview.places.some((place) => place.sources.includes("smn-wrf"));
-  lines.push(usesSmn ? "Fuente: Open-Meteo y SMN." : "Fuente: Open-Meteo.");
+  const sources = new Set(overview.places.flatMap((place) => place.sources));
+  const labels = [sources.has("open-meteo") && "Open-Meteo", sources.has("smn-wrf") && "SMN"].filter(Boolean);
+  lines.push(`Fuente: ${labels.join(" y ") || "sin datos recientes"}.`);
   return lines.join("\n");
 }
 
