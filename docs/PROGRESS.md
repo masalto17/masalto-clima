@@ -6,7 +6,7 @@ Actualizar al cerrar cada sesión. Máximo 40 líneas: lo viejo se resume.
 
 - Hito en curso: **Hito 2 — Backtest**; todavía sin medir aciertos ni validar un detector propio de Zonda.
 - Última revisión: 2026-11-12. Rama visual `hito-2-stitch-visual`, basada en `main` (`044c590`).
-- Producción: página pública de solo lectura con datos reales; PR #7 y el fondo animado del PR #8 ya se fusionaron. El rediseño de Stitch está en preparación para vista previa.
+- Producción: página pública de solo lectura con datos reales; PR #7 y el fondo animado del PR #8 ya se fusionaron. El rediseño de Stitch está en el PR #9 con vista previa verificada; aún no fusionado.
 
 ## Hecho
 
