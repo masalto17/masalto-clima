@@ -20,7 +20,7 @@ interface HeroVideoBackgroundProps {
 export default function HeroVideoBackground({
   src = "/hero/hero-clima.mp4",
   poster = "/hero/hero-clima-poster.jpg",
-  overlay = 0.85,
+  overlay = 0.72,
   className = "",
   children,
 }: HeroVideoBackgroundProps) {

@@ -6,24 +6,33 @@ import type { Overview, PlaceForecast } from "@/lib/forecast/queries";
 import { isStale, sourceLabel } from "@/lib/health/check";
 import type { OfficialAlert } from "@/lib/smn/cap";
 import type { OfficialAlertsResult } from "@/lib/smn/load";
+import Image from "next/image";
 import { salir } from "./actions";
 import HeroVideoBackground from "./components/HeroVideoBackground";
 
 export function Shell({ children, email }: { children: React.ReactNode; email?: string }) {
   return (
-    <HeroVideoBackground className="min-h-screen text-white">
-      <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-5 p-4 sm:p-6">
-        <header className="flex items-end justify-between gap-4 border-b-2 border-brand pb-3">
-          <h1 className="text-2xl font-bold">MasAlto Clima</h1>
+    <HeroVideoBackground className="clima-shell min-h-screen text-white">
+      <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-5 px-4 pb-10 pt-5 sm:px-6 sm:pt-7">
+        <header className="flex items-center justify-between gap-4 border-b border-white/15 pb-4">
+          <div className="flex items-center gap-2">
+            <Image src="/masalto-logo-negativo.png" width={1280} height={739} alt="MasAlto" className="h-12 w-auto sm:h-14" priority />
+            <span className="border-l border-white/25 pl-3 text-[10px] font-bold tracking-[.22em] text-white/65">CLIMA</span>
+          </div>
           {email && (
             <form action={salir} className="text-right text-sm">
-              <span className="hidden opacity-70 sm:inline">{email} · </span>
-              <button type="submit" className="underline">
+              <span className="hidden text-white/60 sm:inline">{email} · </span>
+              <button type="submit" className="underline underline-offset-4">
                 Salir
               </button>
             </form>
           )}
         </header>
+        <div className="space-y-1 pb-1 pt-2">
+          <p className="text-[10px] font-bold uppercase tracking-[.22em] text-red-400">Pronóstico por lugar</p>
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">El clima, claro y a tiempo.</h1>
+          <p className="max-w-xl text-sm leading-relaxed text-white/65">Viento, lluvia y avisos oficiales para los lugares que seguimos.</p>
+        </div>
         {children}
       </main>
     </HeroVideoBackground>
@@ -33,15 +42,15 @@ export function Shell({ children, email }: { children: React.ReactNode; email?: 
 const TONE_ORDER: Record<Tone, number> = { warning: 0, info: 1, calm: 2 };
 
 const TONE_CLASS: Record<Tone, string> = {
-  calm: "bg-emerald-500/20 text-emerald-200",
-  info: "bg-amber-500/20 text-amber-200",
-  warning: "bg-red-600/20 text-red-200",
+  calm: "border border-emerald-400/25 bg-emerald-500/15 text-emerald-300",
+  info: "border border-amber-400/25 bg-amber-500/15 text-amber-300",
+  warning: "border border-red-400/35 bg-red-500/20 text-red-200",
 };
 
 function Estado({ status }: { status: DayStatus }) {
   return (
     <span
-      className={`inline-block rounded-full px-3 py-0.5 text-sm font-semibold ${TONE_CLASS[status.tone]}`}
+      className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-bold ${TONE_CLASS[status.tone]}`}
     >
       {status.label}
     </span>
@@ -75,30 +84,32 @@ function AlertasOficiales({ alerts, state, checkedAt, timeZone }: {
   timeZone: string;
 }) {
   return (
-    <div className="rounded-lg border border-brand/50 p-3 text-sm">
-      <h3 className="font-bold">Alertas oficiales del SMN</h3>
+    <div className={`rounded-xl border p-4 text-sm ${alerts.length > 0 ? "border-red-400/45 bg-red-950/30" : "border-amber-400/20 bg-amber-950/15"}`}>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-bold">Alertas oficiales del SMN</h3>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">Fuente: SMN</span>
+      </div>
       {state !== "ok" && (
-        <p role="alert" className="font-semibold">
+        <p role="alert" className="font-medium leading-relaxed text-amber-100">
           {state === "unavailable"
             ? "No se pudieron verificar las alertas oficiales ahora."
             : "La consulta oficial fue parcial; pueden faltar alertas."}{" "}
-          <a className="underline" href="https://www.smn.gob.ar/alertas" target="_blank" rel="noopener noreferrer">Consultá el SMN</a>.
+          <a className="font-bold underline underline-offset-4" href="https://www.smn.gob.ar/alertas" target="_blank" rel="noopener noreferrer">Consultá el SMN</a>.
         </p>
       )}
       {alerts.length === 0 && state === "ok" && (
-        <p>No apareció una alerta aplicable a este punto en el índice consultado. Esto no confirma ausencia de riesgo.</p>
+        <p className="text-white/70">No apareció una alerta aplicable a este punto en el índice consultado. Esto no confirma ausencia de riesgo.</p>
       )}
       {alerts.map((alert) => (
-        <article key={alert.id} className="mt-2 border-t border-current/15 pt-2">
-          <p className="font-bold">{alert.demo ? "DEMO ficticia · " : ""}{alert.headline}</p>
+        <article key={alert.id} className="mt-3 space-y-1 border-t border-white/15 pt-3 leading-relaxed">
+          <p className="font-bold text-red-100">{alert.demo ? "DEMO ficticia · " : ""}{alert.headline}</p>
           <p>Evento: {alert.event}{alert.severity && ` · Severidad oficial: ${alert.severity}`}</p>
-          <p>Desde {localMoment(alert.startsAt, timeZone)} hasta {localMoment(alert.expiresAt, timeZone)}.</p>
-          <p>Emitida {localMoment(alert.sentAt, timeZone)}.</p>
-          {alert.description && <p>{alert.description}</p>}
-          {!alert.demo && <a className="underline" href={alert.sourceUrl} target="_blank" rel="noopener noreferrer">Ver aviso CAP original</a>}
+          <p>Desde {localMoment(alert.startsAt, timeZone)} hasta {localMoment(alert.expiresAt, timeZone)}. Emitida {localMoment(alert.sentAt, timeZone)}.</p>
+          {alert.description && <p className="text-white/80">{alert.description}</p>}
+          {!alert.demo && <a className="inline-block font-bold text-red-200 underline underline-offset-4" href={alert.sourceUrl} target="_blank" rel="noopener noreferrer">Ver aviso CAP original</a>}
         </article>
       ))}
-      <p className="mt-2 text-xs opacity-70">Índice consultado: {localMoment(checkedAt, timeZone)} · Fuente: SMN. El pronóstico por modelos aparece aparte.</p>
+      <p className="mt-3 border-t border-white/10 pt-2 text-xs text-white/50">Índice consultado: {localMoment(checkedAt, timeZone)}. El pronóstico por modelos aparece aparte.</p>
     </div>
   );
 }
@@ -119,50 +130,62 @@ function hourlyRain(hour: HourlySummary): string {
 function HorasDeManana({ hours }: { hours: HourlySummary[] }) {
   if (hours.length === 0) return <p className="text-sm">Sin pronóstico horario para mañana.</p>;
   const withWind = hours.filter((hour) => hour.windHigh !== null);
-  const peak = withWind.sort((a, b) => (b.windHigh ?? 0) - (a.windHigh ?? 0))[0];
+  const peak = [...withWind].sort((a, b) => (b.windHigh ?? 0) - (a.windHigh ?? 0))[0];
+  const maxWind = Math.max(...withWind.map((hour) => hour.windHigh ?? 0), 1);
   const windows = rainWindows(hours);
   const hasRainData = hours.some((hour) => hour.rainDataModels > 0);
   return (
-    <div className="rounded-lg bg-foreground/5 p-3 text-sm">
-      <p className="font-semibold">Mañana, por hora</p>
+    <div className="glass-panel-raised rounded-xl p-4 text-sm">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h3 className="text-sm font-bold">Mañana, por hora</h3>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-red-300">Detalle horario</span>
+      </div>
       {peak && (
-        <p>
-          Mayor viento previsto: {peak.hour}–{peak.hour + 1} h, {range(peak.windLow, peak.windHigh, "km/h")}.
+        <p className="leading-relaxed text-white/80">
+          Mayor viento previsto: <strong className="text-white">{peak.hour}–{peak.hour + 1} h, {range(peak.windLow, peak.windHigh, "km/h")}</strong>.
           {peak.windDirection !== null && ` Dirección del modelo más intenso: ${directionName(peak.windDirection)}.`}
           {peak.gustHigh !== null && ` Ráfagas: ${range(peak.gustLow, peak.gustHigh, "km/h")}.`}
         </p>
       )}
-      <p>
+      <p className="mt-1 leading-relaxed text-white/70">
         {windows.length > 0
           ? `Algún modelo indica lluvia: ${windows.map((window) => `${window.start}–${window.end + 1} h`).join(", ")}.`
           : hasRainData ? "Ningún modelo disponible indica lluvia." : "Lluvia: sin datos horarios."}
       </p>
-      <details className="mt-2">
-        <summary className="cursor-pointer font-semibold underline-offset-4 hover:underline">Ver todas las horas y modelos</summary>
-        <ul className="mt-2 max-h-80 overflow-y-auto">
+      <details className="group mt-4 border-t border-white/10 pt-3">
+        <summary className="flex cursor-pointer items-center justify-between gap-2 font-bold text-red-200 hover:text-red-100">
+          Ver todas las horas y modelos <span aria-hidden="true" className="transition-transform group-open:rotate-180">⌄</span>
+        </summary>
+        <p className="mt-3 text-xs text-white/50">Las barras comparan cada hora con la mayor velocidad prevista de mañana.</p>
+        <ul className="mt-2 max-h-96 overflow-y-auto">
           {hours.map((hour) => (
-            <li key={hour.hour} className="border-t border-current/10 py-2">
-              <strong>{String(hour.hour).padStart(2, "0")}:00</strong> · Viento {range(hour.windLow, hour.windHigh, "km/h")}
+            <li key={hour.hour} className="border-t border-white/10 py-2.5">
+              <div className="mb-1 text-xs leading-relaxed">
+              <strong className="mr-2 text-white">{String(hour.hour).padStart(2, "0")}:00</strong> · Viento {range(hour.windLow, hour.windHigh, "km/h")}
               {hour.windDirection !== null && ` del ${directionName(hour.windDirection)}`}
               {hour.gustHigh !== null && ` · Ráfagas ${range(hour.gustLow, hour.gustHigh, "km/h")}`}
               {` · ${hourlyRain(hour)}`}
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-white/10" aria-hidden="true">
+                <div className="h-full rounded-full bg-gradient-to-r from-red-800 to-red-500" style={{ width: `${Math.max(0, Math.min(100, ((hour.windHigh ?? 0) / maxWind) * 100))}%` }} />
+              </div>
             </li>
           ))}
         </ul>
       </details>
-      <p className="mt-2 opacity-70">Los rangos y la cantidad de modelos muestran diferencias entre pronósticos; no son una probabilidad ni una medición en el predio.</p>
+      <p className="mt-3 text-xs leading-relaxed text-white/50">Los rangos y la cantidad de modelos muestran diferencias entre pronósticos; no son una probabilidad ni una medición en el predio.</p>
     </div>
   );
 }
 
 function Momento({ titulo, day }: { titulo: string; day?: DaySummary }) {
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="font-bold">{titulo}</span>
+    <div className="glass-panel-raised flex min-w-0 flex-col gap-3 rounded-xl p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-xs font-bold uppercase tracking-[.14em] text-white/70">{titulo}</span>
         {day && <Estado status={dayStatus(day)} />}
       </div>
-      <p className="leading-relaxed">{day ? dayPhrase(day) : "Sin pronóstico todavía."}</p>
+      <p className="text-sm leading-relaxed">{day ? dayPhrase(day) : "Sin pronóstico todavía."}</p>
     </div>
   );
 }
@@ -170,37 +193,46 @@ function Momento({ titulo, day }: { titulo: string; day?: DaySummary }) {
 function Lugar({ place, days, sources, hourlyTomorrow, hoy, manana, official }: Tarjeta & { official: OfficialAlertsResult }) {
   const resto = days.filter((day) => day !== hoy && day !== manana);
   return (
-    <section className="flex flex-col gap-4 rounded-xl border border-current/15 p-4">
-      <h2 className="text-xl font-bold">{place.name}</h2>
+    <section className="glass-panel clima-card flex flex-col gap-4 rounded-2xl p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-[.18em] text-red-300">Lugar seguido</p>
+          <h2 className="text-xl font-extrabold leading-tight tracking-tight sm:text-2xl">{place.name}</h2>
+          <p className="mt-1 text-xs text-white/50">{place.timezone === "America/Argentina/San_Juan" ? "San Juan" : "Córdoba"} · Pronóstico por modelos</p>
+        </div>
+        <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10 text-red-300">⌖</span>
+      </div>
       <AlertasOficiales alerts={official.byPlace[place.id] ?? []} state={official.state} checkedAt={official.checkedAt} timeZone={place.timezone} />
-      <Momento titulo="Hoy" day={hoy} />
-      <Momento titulo="Mañana" day={manana} />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Momento titulo="Hoy" day={hoy} />
+        <Momento titulo="Mañana" day={manana} />
+      </div>
       <HorasDeManana hours={hourlyTomorrow} />
       {place.timezone === "America/Argentina/San_Juan" && (
-        <p className="text-sm opacity-70">
+        <p className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs leading-relaxed text-white/65">
           Zonda: esta vista sólo lo identifica cuando hay un aviso oficial aplicable del SMN; todavía no tiene detector propio.
         </p>
       )}
       {resto.length > 0 && (
-        <details className="group">
-          <summary className="cursor-pointer font-semibold underline-offset-4 hover:underline">
-            Ver el resto de la semana
+        <details className="group border-t border-white/10 pt-3">
+          <summary className="flex cursor-pointer items-center justify-between font-bold text-sm hover:text-red-200">
+            Ver el resto de la semana <span aria-hidden="true" className="text-red-300 transition-transform group-open:rotate-180">⌄</span>
           </summary>
           <ul className="mt-3 flex flex-col gap-3">
             {resto.map((day) => (
-              <li key={day.date} className="flex flex-col gap-1 border-t border-current/10 pt-3">
+              <li key={day.date} className="flex flex-col gap-1 border-t border-white/10 pt-3 text-sm">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold capitalize">{formatDayLabel(day.date)}</span>
                   <Estado status={dayStatus(day)} />
                 </div>
                 <p className="leading-relaxed">{dayPhrase(day)}</p>
-                {rangoRafaga(day) && <p className="text-sm opacity-60">{rangoRafaga(day)}</p>}
+                {rangoRafaga(day) && <p className="text-xs text-white/55">{rangoRafaga(day)}</p>}
               </li>
             ))}
           </ul>
         </details>
       )}
-      <p className="text-xs opacity-60">
+      <p className="border-t border-white/10 pt-3 text-xs text-white/50">
         Fuente reciente: {sources.length === 0 ? "ninguna" : sources.map((source) => source === "smn-wrf" ? "SMN" : "Open-Meteo").join(" y ")}.
       </p>
     </section>
@@ -210,10 +242,7 @@ function Lugar({ place, days, sources, hourlyTomorrow, hoy, manana, official }: 
 export function VistaGeneral({ overview, officialAlerts, now }: { overview: Overview; officialAlerts: OfficialAlertsResult; now: Date }) {
   if (overview.places.length === 0) {
     return (
-      <p>
-        No hay lugares guardados para esta cuenta. Si todavía no vinculaste Telegram, mandale
-        /start al bot.
-      </p>
+      <p className="glass-panel rounded-xl p-4 text-sm">Todavía no hay lugares guardados para mostrar.</p>
     );
   }
 
@@ -227,8 +256,10 @@ export function VistaGeneral({ overview, officialAlerts, now }: { overview: Over
         manana: forecast.days.find((day) => day.date === addDays(today, 1)),
       };
     })
-    // Primero lo que pide más atención hoy.
+    // El estadio es el lugar principal de esta vista; después, lo que pide más atención hoy.
     .sort((a, b) => {
+      const stadium = (card: Tarjeta) => /estadio san juan del bicentenario/i.test(card.place.name) ? 0 : 1;
+      if (stadium(a) !== stadium(b)) return stadium(a) - stadium(b);
       const tone = (card: Tarjeta) => (card.hoy ? TONE_ORDER[dayStatus(card.hoy).tone] : 3);
       return tone(a) - tone(b);
     });
@@ -236,7 +267,7 @@ export function VistaGeneral({ overview, officialAlerts, now }: { overview: Over
   return (
     <>
       {(stale.length > 0 || overview.health.length === 0) && (
-        <p role="alert" className="rounded-xl border-2 border-brand px-4 py-3 font-semibold">
+        <p role="alert" className="glass-panel rounded-xl border-red-500/60 px-4 py-3 text-sm font-semibold leading-relaxed text-red-100">
           {tarjetas.some((tarjeta) => tarjeta.sources.length > 0)
             ? "Una fuente sin actualizar; el pronóstico usa sólo fuentes recientes. Consultá también al SMN."
             : "Sistema sin datos, usar SMN."}
@@ -247,7 +278,7 @@ export function VistaGeneral({ overview, officialAlerts, now }: { overview: Over
       {tarjetas.map((tarjeta) => (
         <Lugar key={tarjeta.place.id} {...tarjeta} official={officialAlerts} />
       ))}
-      <footer className="flex flex-col gap-1 border-t border-current/20 pt-3 text-xs opacity-60">
+      <footer className="flex flex-col gap-2 border-t border-white/15 pt-4 text-xs leading-relaxed text-white/55">
         <p>
           {overview.health
             .map(
@@ -263,6 +294,7 @@ export function VistaGeneral({ overview, officialAlerts, now }: { overview: Over
           (peor caso). Nombres del viento según la escala de Beaufort. Datos: Open-Meteo (CC BY
           4.0) y Servicio Meteorológico Nacional (CC BY 2.5 AR).
         </p>
+        <a href="https://masalto.com.ar" target="_blank" rel="noopener noreferrer" className="mt-2 font-bold text-white/75 underline underline-offset-4 hover:text-white">MasAlto Producciones ↗</a>
       </footer>
     </>
   );
