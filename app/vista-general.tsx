@@ -7,32 +7,35 @@ import { isStale, sourceLabel } from "@/lib/health/check";
 import type { OfficialAlert } from "@/lib/smn/cap";
 import type { OfficialAlertsResult } from "@/lib/smn/load";
 import { salir } from "./actions";
+import HeroVideoBackground from "./components/HeroVideoBackground";
 
 export function Shell({ children, email }: { children: React.ReactNode; email?: string }) {
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-5 p-4 sm:p-6">
-      <header className="flex items-end justify-between gap-4 border-b-2 border-brand pb-3">
-        <h1 className="text-2xl font-bold">MasAlto Clima</h1>
-        {email && (
-          <form action={salir} className="text-right text-sm">
-            <span className="hidden opacity-70 sm:inline">{email} · </span>
-            <button type="submit" className="underline">
-              Salir
-            </button>
-          </form>
-        )}
-      </header>
-      {children}
-    </main>
+    <HeroVideoBackground className="min-h-screen text-white">
+      <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-5 p-4 sm:p-6">
+        <header className="flex items-end justify-between gap-4 border-b-2 border-brand pb-3">
+          <h1 className="text-2xl font-bold">MasAlto Clima</h1>
+          {email && (
+            <form action={salir} className="text-right text-sm">
+              <span className="hidden opacity-70 sm:inline">{email} · </span>
+              <button type="submit" className="underline">
+                Salir
+              </button>
+            </form>
+          )}
+        </header>
+        {children}
+      </main>
+    </HeroVideoBackground>
   );
 }
 
 const TONE_ORDER: Record<Tone, number> = { warning: 0, info: 1, calm: 2 };
 
 const TONE_CLASS: Record<Tone, string> = {
-  calm: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300",
-  info: "bg-amber-500/15 text-amber-900 dark:text-amber-300",
-  warning: "bg-red-600/15 text-red-800 dark:text-red-300",
+  calm: "bg-emerald-500/20 text-emerald-200",
+  info: "bg-amber-500/20 text-amber-200",
+  warning: "bg-red-600/20 text-red-200",
 };
 
 function Estado({ status }: { status: DayStatus }) {
