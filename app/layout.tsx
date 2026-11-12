@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Nunito_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-// Tipografía de soporte de MasAlto: Nunito Sans para la interfaz, IBM Plex Mono para datos.
-const nunitoSans = Nunito_Sans({
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
-  variable: "--font-nunito-sans",
+const montserrat = localFont({
+  src: "./fonts/Montserrat.ttf",
+  weight: "100 900",
+  variable: "--font-montserrat",
 });
-const plexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "600"],
-  variable: "--font-plex-mono",
+const roboto = localFont({
+  src: "./fonts/Roboto.ttf",
+  weight: "100 900",
+  variable: "--font-roboto",
 });
 
 export const metadata: Metadata = {
@@ -26,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es-AR">
-      <body className={`${nunitoSans.variable} ${plexMono.variable} antialiased`}>{children}</body>
+      <body className={`${montserrat.variable} ${roboto.variable} antialiased`}>{children}</body>
     </html>
   );
 }
