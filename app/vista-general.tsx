@@ -7,23 +7,26 @@ import { isStale, sourceLabel } from "@/lib/health/check";
 import type { OfficialAlert } from "@/lib/smn/cap";
 import type { OfficialAlertsResult } from "@/lib/smn/load";
 import { salir } from "./actions";
+import HeroVideoBackground from "./components/HeroVideoBackground";
 
 export function Shell({ children, email }: { children: React.ReactNode; email?: string }) {
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-5 p-4 sm:p-6">
-      <header className="flex items-end justify-between gap-4 border-b-2 border-brand pb-3">
-        <h1 className="text-2xl font-bold">MasAlto Clima</h1>
-        {email && (
-          <form action={salir} className="text-right text-sm">
-            <span className="hidden opacity-70 sm:inline">{email} · </span>
-            <button type="submit" className="underline">
-              Salir
-            </button>
-          </form>
-        )}
-      </header>
-      {children}
-    </main>
+    <HeroVideoBackground className="min-h-screen">
+      <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-5 p-4 sm:p-6">
+        <header className="flex items-end justify-between gap-4 border-b-2 border-brand pb-3">
+          <h1 className="text-2xl font-bold">MasAlto Clima</h1>
+          {email && (
+            <form action={salir} className="text-right text-sm">
+              <span className="hidden opacity-70 sm:inline">{email} · </span>
+              <button type="submit" className="underline">
+                Salir
+              </button>
+            </form>
+          )}
+        </header>
+        {children}
+      </main>
+    </HeroVideoBackground>
   );
 }
 
