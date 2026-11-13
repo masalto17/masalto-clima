@@ -15,7 +15,9 @@ const roboto = localFont({
 
 export const metadata: Metadata = {
   title: "MasAlto Clima",
-  description: "Centro de riesgo climático por evento del ecosistema MasAlto.",
+  description: "El clima del lugar, ahora y los próximos días.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "Clima", statusBarStyle: "black-translucent" },
 };
 
 export default function RootLayout({

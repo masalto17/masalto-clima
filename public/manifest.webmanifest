@@ -1,0 +1,12 @@
+{
+  "name": "MasAlto Clima",
+  "short_name": "Clima",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "lang": "es-AR",
+  "icons": [
+    { "src": "/masalto-logo-negativo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
