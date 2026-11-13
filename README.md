@@ -66,7 +66,7 @@ En `/avisos` se prenden mail, WhatsApp y push. Sin estas variables el interrupto
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM` | WhatsApp por Twilio, si no está la Cloud API. |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Push del navegador. `VAPID_SUBJECT` es un mail `mailto:alguien@masalto.com.ar`. |
 
-El cron manda solo cuando el nivel sube. Hace falta Blob o KV para que el servidor conozca el destino.
+El cron manda solo cuando el nivel sube. Hace falta Blob o KV para que el servidor conozca el destino, y hay que estar adentro con un usuario habilitado (`ALLOWED_EMAILS`) para ver o cambiar esos destinos. Sin sesión, la API no devuelve el mail ni el teléfono y no deja enviar una prueba.
 
 `GET /api/estado` es el JSON para un widget nativo futuro. La web se puede instalar, pero el widget de la pantalla de inicio no sale de esta PWA. El plan está en `PROPUESTA.md`.
 

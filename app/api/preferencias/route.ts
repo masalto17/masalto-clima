@@ -1,16 +1,21 @@
+import { operatorSession } from "@/lib/clima/operator";
 import { parsePreferences } from "@/lib/clima/prefs";
-import { readPreferences, writePreferences } from "@/lib/clima/prefs-store";
+import { mergePlaceList, readPreferences, writePreferences } from "@/lib/clima/prefs-store";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const result = await readPreferences();
-  return Response.json(result);
+  const session = await operatorSession();
+  const { prefs, storage } = await readPreferences();
+  if (!session) return Response.json({ signedIn: false, storage });
+  return Response.json({ signedIn: true, storage, prefs });
 }
 
 export async function PUT(request: Request) {
-  const body = await request.json().catch(() => null);
-  const prefs = parsePreferences(body);
-  const stored = await writePreferences(prefs);
-  return Response.json({ stored, prefs });
+  const session = await operatorSession();
+  if (!session) return Response.json({ stored: false, signedIn: false }, { status: 401 });
+  const incoming = parsePreferences(await request.json().catch(() => null));
+  const { prefs } = await readPreferences();
+  const stored = await writePreferences(mergePlaceList(prefs, incoming));
+  return Response.json({ stored, signedIn: true });
 }

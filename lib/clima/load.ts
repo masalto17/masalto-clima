@@ -76,9 +76,9 @@ async function loadWrf(places: PublicPlace[]): Promise<{ points: HourPoint[]; ok
   }
 }
 
-async function gather(now: Date, days: number, metarHours: number, places = PUBLIC_PLACES) {
+async function gather(now: Date, days: number, metarHours: number, places = PUBLIC_PLACES, paid = true) {
   const [live, observations, wrf, alerts, ledger] = await Promise.all([
-    fetchForecasts(places, { days, ...keys() }),
+    fetchForecasts(places, paid ? { days, ...keys() } : { days, apiKey: openMeteoKey() }),
     fetchObservations(places, { metarHours, now }),
     loadWrf(places),
     loadOfficialAlerts(
@@ -131,7 +131,7 @@ export async function buildClimateReport(now = new Date()): Promise<ClimateRepor
 }
 
 export async function reportForPlace(place: PublicPlace, now = new Date()): Promise<ClimateReport> {
-  return toReport(await gather(now, 7, 3, [place]), now);
+  return toReport(await gather(now, 7, 3, [place], false), now);
 }
 
 export const loadClimateReport = unstable_cache(async () => buildClimateReport(new Date()), ["clima-consenso-v5"], {

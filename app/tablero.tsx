@@ -55,8 +55,8 @@ export function Tablero({ report }: { report: ClimateReport }) {
     setReady(true);
     void fetch("/api/preferencias")
       .then((response) => response.json())
-      .then((body: { prefs?: Preferences; storage?: string }) => {
-        if (body.storage && body.storage !== "none" && body.prefs) setPrefs(parsePreferences(body.prefs));
+      .then((body: { signedIn?: boolean; prefs?: Preferences }) => {
+        if (body.signedIn && body.prefs) setPrefs(parsePreferences(body.prefs));
       })
       .catch(() => undefined);
     if ("serviceWorker" in navigator) {

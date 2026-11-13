@@ -15,11 +15,13 @@ function urlBase64ToUint8Array(base64: string) {
 export default function AvisosPage() {
   const [prefs, setPrefs] = useState<Preferences>(emptyPreferences);
   const [channels, setChannels] = useState<Status | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
   const [note, setNote] = useState("");
 
   useEffect(() => {
-    void fetch("/api/avisos").then((response) => response.json()).then((body: { prefs: Preferences; channels: Status }) => {
-      setPrefs(body.prefs);
+    void fetch("/api/avisos").then((response) => response.json()).then((body: { prefs: Preferences | null; channels: Status; signedIn: boolean }) => {
+      setSignedIn(body.signedIn);
+      if (body.prefs) setPrefs(body.prefs);
       setChannels(body.channels);
     });
   }, []);
@@ -31,8 +33,12 @@ export default function AvisosPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prefs: next, test }),
     });
-    const body = await response.json() as { sent?: number; storage?: string };
-    setNote(test ? (body.sent ? "Se mandó una prueba." : "No se pudo mandar. Revisá el canal y las claves.") : "Guardado en este teléfono.");
+    if (response.status === 401) {
+      setNote("Tenés que entrar con tu usuario para guardar destinos o mandar una prueba.");
+      return;
+    }
+    const body = await response.json() as { sent?: number };
+    setNote(test ? (body.sent ? "Se mandó una prueba." : "No se pudo mandar. Revisá el canal y las claves.") : "Guardado.");
   }
 
   async function enablePush(next: Preferences) {
@@ -51,7 +57,8 @@ export default function AvisosPage() {
     <main className="modo-obra mx-auto flex min-h-screen max-w-xl flex-col gap-4 px-4 py-6">
       <Link className="toque w-fit" href="/">Volver</Link>
       <h1 className="text-3xl font-extrabold">Avisos</h1>
-      <p className="text-base">Se mandan cuando el nivel sube. Si el envío no está configurado, el interruptor queda guardado pero no sale nada.</p>
+      <p className="text-base">Se mandan cuando el nivel sube. Los destinos solo se guardan con la sesión iniciada.</p>
+      {!signedIn && <p className="rounded-xl border-2 px-3 py-3">Entrá con tu usuario de MasAlto para ver o cambiar el mail y el WhatsApp. Sin sesión, esta página no muestra ni pisa esos datos.</p>}
       {!channels?.storage && <p className="rounded-xl border-2 px-3 py-3">Sin Blob ni KV los avisos quedan solo en este teléfono y el cron no los puede mandar.</p>}
       <label className="flex min-h-11 items-center gap-3 text-lg font-bold">
         <input type="checkbox" className="h-6 w-6" checked={prefs.emailOn} onChange={(event) => setPrefs({ ...prefs, emailOn: event.target.checked })} />
