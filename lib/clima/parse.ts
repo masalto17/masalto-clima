@@ -114,13 +114,16 @@ export function parseOpenWeather(body: unknown, placeId: string): HourPoint[] {
     const speed = finite(wind?.speed);
     const gust = finite(wind?.gust);
     const point = blank(placeId, "openweather", validTime);
+    const rain3h = finite(rain?.["3h"]);
     point.temperature_c = finite(main?.temp);
     point.humidity_pct = finite(main?.humidity);
     point.pressure_hpa = finite(main?.pressure);
+    point.pressureIsMsl = point.pressure_hpa !== null;
     point.wind_speed_kmh = speed !== null ? speed * MS_TO_KMH : null;
     point.wind_gust_kmh = gust !== null ? gust * MS_TO_KMH : null;
     point.wind_direction_deg = finite(wind?.deg);
-    point.precipitation_mm = finite(rain?.["3h"]) ?? finite(rain?.["1h"]);
+    // `rain.3h` es el acumulado de tres horas. El consenso lo lee como una hora.
+    point.precipitation_mm = finite(rain?.["1h"]) ?? (rain3h !== null ? rain3h / 3 : null);
     if (hasValue(point)) points.push(point);
   }
   return points;
@@ -145,6 +148,7 @@ export function parseWeatherApi(body: unknown, placeId: string): HourPoint[] {
       point.wind_gust_kmh = finite(row.gust_kph);
       point.wind_direction_deg = finite(row.wind_degree);
       point.pressure_hpa = finite(row.pressure_mb);
+      point.pressureIsMsl = point.pressure_hpa !== null;
       if (hasValue(point)) points.push(point);
     }
   }
@@ -221,6 +225,14 @@ export function foldName(value: string): string {
     .toLowerCase()
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/** Prefiere el nombre exacto. Si el SMN solo publica «Córdoba Observatorio», igual lo toma. */
+export function pickSmnStation(rows: SmnRow[], station: string): SmnRow | undefined {
+  const wanted = foldName(station);
+  const exact = rows.filter((row) => foldName(row.station) === wanted);
+  const pool = exact.length > 0 ? exact : rows.filter((row) => foldName(row.station).startsWith(`${wanted} `));
+  return [...pool].sort((a, b) => b.time.localeCompare(a.time))[0];
 }
 
 export type SmnRow = {

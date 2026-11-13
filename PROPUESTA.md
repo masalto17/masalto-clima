@@ -32,7 +32,7 @@ Sin clave, en cada consulta:
 
 Con clave, opcionales, y la página no las extraña si faltan:
 
-- OpenWeatherMap, pronóstico cada 3 horas (`OPENWEATHER_API_KEY`). El viento viene en m/s aunque se pida métrico.
+- OpenWeatherMap, pronóstico cada 3 horas (`OPENWEATHER_API_KEY`). El viento viene en m/s aunque se pida métrico. La lluvia `rain.3h` se pasa a mm por hora para no disparar una alerta con el acumulado de tres horas.
 - WeatherAPI, 3 días (`WEATHERAPI_KEY`).
 - Tomorrow.io, horario (`TOMORROW_API_KEY`). En métrico el viento también viene en m/s.
 
@@ -45,7 +45,7 @@ Cada hora UTC se arma así:
 - Temperatura, humedad y lluvia: promedio ponderado por el acierto reciente de esa fuente en esa variable.
 - Viento y ráfaga: el valor más alto entre las fuentes que todavía no demostraron ser claramente peores. Con historial vacío, eso es el máximo: la misma regla de hoy. Una fuente cuyo peso cae por debajo de la mitad de la mejor queda afuera del número, y su pico se muestra igual como «una fuente marca ráfagas altas».
 - Si dos fuentes, aunque pesen poco, superan el umbral de alerta, el estado sube a alerta. Un modelo solo no pinta la pantalla de rojo.
-- La presión a nivel del mar (MET Norway) no se mezcla con la presión de superficie (Open-Meteo). Sirve para ver si baja, no para un promedio.
+- La presión a nivel del mar (MET Norway, OpenWeather y WeatherAPI) no se mezcla con la presión de superficie (Open-Meteo). Sirve para ver si baja dentro de una misma serie, no para un promedio.
 
 El peso es `1 / (error medio + un piso)`. Recién se usa después de 8 comparaciones. Antes, todas pesan igual.
 

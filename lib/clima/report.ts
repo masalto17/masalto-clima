@@ -413,7 +413,7 @@ export function buildReport(input: {
   placeViews.sort((a, b) => {
     const pin = (place: PlaceView) => (/bicentenario/i.test(place.name) ? 0 : 1);
     if (pin(a) !== pin(b)) return pin(a) - pin(b);
-    return LEVEL_RANK[a.level] - LEVEL_RANK[b.level];
+    return LEVEL_RANK[b.level] - LEVEL_RANK[a.level];
   });
 
   const degraded = placeViews.every((place) => place.sourceLabels.length === 0);

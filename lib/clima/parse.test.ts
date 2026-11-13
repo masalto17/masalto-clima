@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseMetarObs, parseMetNorway, parseOpenMeteo, parseOpenWeather, parseSmnTiepre, relativeHumidity } from "./parse";
+import { parseMetarObs, parseMetNorway, parseOpenMeteo, parseOpenWeather, parseSmnTiepre, parseWeatherApi, pickSmnStation, relativeHumidity } from "./parse";
 
 describe("lectores de fuentes", () => {
   it("lee una hora de Open-Meteo por modelo", () => {
@@ -51,7 +51,28 @@ describe("lectores de fuentes", () => {
     );
     expect(point.wind_speed_kmh).toBe(36);
     expect(point.wind_gust_kmh).toBe(54);
-    expect(point.precipitation_mm).toBe(1.2);
+    expect(point.precipitation_mm).toBeCloseTo(0.4);
+    expect(point.pressureIsMsl).toBe(true);
+  });
+
+  it("no mezcla la presión de WeatherAPI, que es a nivel del mar", () => {
+    const [point] = parseWeatherApi(
+      { forecast: { forecastday: [{ hour: [{ time_epoch: 1794592800, temp_c: 22, pressure_mb: 1012, precip_mm: 0.2 }] }] } },
+      "villa-allende",
+    );
+    expect(point.pressureIsMsl).toBe(true);
+    expect(point.precipitation_mm).toBe(0.2);
+  });
+
+  it("elige Córdoba exacta y, si no está, el observatorio", () => {
+    const rows = parseSmnTiepre(
+      [
+        "Córdoba Observatorio;12-noviembre-2026;21:00;Despejado;10 km;29.5;30.7; 52;Noreste  7;963.8 /",
+        "Córdoba;12-noviembre-2026;22:00;Despejado;15 km;22.8;No se calcula; 78;Norte  9;956.5 /",
+      ].join("\n"),
+    );
+    expect(pickSmnStation(rows, "Córdoba")?.temperature_c).toBe(22.8);
+    expect(pickSmnStation(rows.filter((row) => row.station !== "Córdoba"), "Córdoba")?.station).toBe("Córdoba Observatorio");
   });
 
   it("lee la fila del SMN en hora de Argentina", () => {

@@ -55,6 +55,32 @@ describe("estado", () => {
     expect(result.places[0].days[0].status).toBe("Ráfagas");
   });
 
+  it("deja el estadio primero y, después, el lugar con alerta arriba del tranquilo", () => {
+    const ciudad = PUBLIC_PLACES[1];
+    const cordoba = PUBLIC_PLACES[2];
+    const result = buildReport({
+      now: NOW,
+      places: [cordoba, ciudad, estadio],
+      points: [
+        point({ wind_gust_kmh: 12 }),
+        { ...point({ wind_gust_kmh: 10 }), placeId: ciudad.id },
+        { ...point({ wind_gust_kmh: 80, wind_speed_kmh: 40 }), placeId: cordoba.id },
+      ],
+      observations: [],
+      alerts: [],
+      alertsState: "ok",
+      scores: {},
+      thresholds: DEFAULT_THRESHOLDS,
+      sources: [],
+      storage: "none",
+    });
+    expect(result.places.map((place) => place.name)).toEqual([
+      "Estadio San Juan del Bicentenario",
+      "Córdoba Villa Allende",
+      "San Juan Ciudad",
+    ]);
+  });
+
   it("avisa que la ráfaga es de mañana, no de esta hora", () => {
     const result = report([
       point({ wind_gust_kmh: 12 }),

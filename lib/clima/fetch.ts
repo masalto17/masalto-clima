@@ -7,6 +7,7 @@ import {
   parseSmnTiepre,
   parseTomorrow,
   parseWeatherApi,
+  pickSmnStation,
 } from "./parse";
 import { OPEN_METEO_MODELS, SOURCE_LABELS, USER_AGENT, sourceLabel } from "./sources";
 import { hourIso } from "./time";
@@ -217,9 +218,7 @@ export async function fetchObservations(places: PublicPlace[], options: { metarH
     );
     const rows = files.flatMap((file) => (file.includes(";") ? parseSmnTiepre(file) : []));
     for (const place of places) {
-      const station = rows
-        .filter((row) => row.station.localeCompare(place.smnStation, "es", { sensitivity: "base" }) === 0)
-        .sort((a, b) => b.time.localeCompare(a.time))[0];
+      const station = pickSmnStation(rows, place.smnStation);
       if (!station) continue;
       observations.push({
         placeId: place.id,
