@@ -7,10 +7,14 @@
 export type Thresholds = {
   gustAtencion: number;
   gustAlerta: number;
+  /** Viento medio para tener en cuenta. No sube solo a alerta. */
+  windAtencion: number;
   windAlerta: number;
   rainAtencionMm: number;
   rainAlertaMm: number;
   rainHourAlertaMm: number;
+  /** Lluvia de los días previos que deja el piso del armado blando. */
+  recentRainWetMm: number;
   zondaGust: number;
   zondaGustVigilancia: number;
   zondaHumidity: number;
@@ -21,12 +25,14 @@ export type Thresholds = {
 };
 
 export const DEFAULT_THRESHOLDS: Thresholds = {
-  gustAtencion: 45,
+  gustAtencion: 50,
   gustAlerta: 65,
+  windAtencion: 50,
   windAlerta: 50,
-  rainAtencionMm: 1,
+  rainAtencionMm: 2,
   rainAlertaMm: 10,
   rainHourAlertaMm: 5,
+  recentRainWetMm: 10,
   zondaGust: 50,
   zondaGustVigilancia: 40,
   zondaHumidity: 25,
@@ -47,10 +53,12 @@ export function loadThresholds(env: NodeJS.ProcessEnv = process.env): Thresholds
   return {
     gustAtencion: num(env, "CLIMA_GUST_ATENCION_KMH", DEFAULT_THRESHOLDS.gustAtencion),
     gustAlerta: num(env, "CLIMA_GUST_ALERTA_KMH", DEFAULT_THRESHOLDS.gustAlerta),
+    windAtencion: num(env, "CLIMA_WIND_ATENCION_KMH", DEFAULT_THRESHOLDS.windAtencion),
     windAlerta: num(env, "CLIMA_WIND_ALERTA_KMH", DEFAULT_THRESHOLDS.windAlerta),
     rainAtencionMm: num(env, "CLIMA_RAIN_ATENCION_MM", DEFAULT_THRESHOLDS.rainAtencionMm),
     rainAlertaMm: num(env, "CLIMA_RAIN_ALERTA_MM", DEFAULT_THRESHOLDS.rainAlertaMm),
     rainHourAlertaMm: num(env, "CLIMA_RAIN_HOUR_ALERTA_MM", DEFAULT_THRESHOLDS.rainHourAlertaMm),
+    recentRainWetMm: num(env, "CLIMA_RAIN_RECENT_MM", DEFAULT_THRESHOLDS.recentRainWetMm),
     zondaGust: num(env, "CLIMA_ZONDA_GUST_KMH", DEFAULT_THRESHOLDS.zondaGust),
     zondaGustVigilancia: num(env, "CLIMA_ZONDA_GUST_VIGILANCIA_KMH", DEFAULT_THRESHOLDS.zondaGustVigilancia),
     zondaHumidity: num(env, "CLIMA_ZONDA_HUMIDITY_PCT", DEFAULT_THRESHOLDS.zondaHumidity),

@@ -45,9 +45,30 @@ En producción el route exige `CRON_SECRET` (header `Authorization: Bearer …`)
 
 ## Cortes del semáforo
 
-Valores iniciales en `lib/clima/thresholds.ts`. Se pisan con `CLIMA_GUST_ATENCION_KMH`, `CLIMA_GUST_ALERTA_KMH`, `CLIMA_WIND_ALERTA_KMH`, `CLIMA_RAIN_ATENCION_MM`, `CLIMA_RAIN_ALERTA_MM`, `CLIMA_RAIN_HOUR_ALERTA_MM` y las `CLIMA_ZONDA_*` que están comentadas en `.env.example`.
+De arranque: ráfaga de alerta 65 km/h, viento desde 50 km/h para tener en cuenta, lluvia de 10 mm en alerta y desde 2 mm se anuncia «ojo que hay lluvia». Si los días previos ya sumaron lluvia, el piso del armado pesa en el grado. Se pisan con las `CLIMA_*` de `.env.example`.
 
-Son cortes operativos para la pantalla. No reemplazan el umbral de una estructura: ese CSV sigue vacío.
+No reemplazan el umbral de una estructura: ese CSV sigue vacío.
+
+## Lugares, modo obra y estadísticas
+
+En la home se elige un lugar. Se pueden sumar otros y cargar fecha de armado y de evento. **Modo obra** saca el video para leer al sol. El ranking y el archivo de otros años están en `/estadisticas`.
+
+La lista de lugares queda en el teléfono. Si hay Blob o KV, también se guarda en el servidor (`clima/preferencias.json`).
+
+## Avisos
+
+En `/avisos` se prenden mail, WhatsApp y push. Sin estas variables el interruptor no envía nada:
+
+| Variable | Para qué |
+| --- | --- |
+| `RESEND_API_KEY` y `RESEND_FROM` | Mail con Resend. |
+| `WHATSAPP_TOKEN` y `WHATSAPP_PHONE_ID` | WhatsApp Cloud API. |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM` | WhatsApp por Twilio, si no está la Cloud API. |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Push del navegador. `VAPID_SUBJECT` es un mail `mailto:alguien@masalto.com.ar`. |
+
+El cron manda solo cuando el nivel sube. Hace falta Blob o KV para que el servidor conozca el destino.
+
+`GET /api/estado` es el JSON para un widget nativo futuro. La web se puede instalar, pero el widget de la pantalla de inicio no sale de esta PWA. El plan está en `PROPUESTA.md`.
 
 ## Atribución
 

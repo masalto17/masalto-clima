@@ -1,7 +1,11 @@
 import { parseLedger, type Ledger } from "./accuracy";
 
-const BLOB_PATH = "clima/ledger.json";
-const KV_KEY = "clima:ledger";
+const STORES = {
+  ledger: { blob: "clima/ledger.json", kv: "clima:ledger" },
+  preferencias: { blob: "clima/preferencias.json", kv: "clima:preferencias" },
+} as const;
+
+export type StoreName = keyof typeof STORES;
 
 export type StorageKind = "blob" | "kv" | "none";
 
@@ -11,10 +15,10 @@ export function storageKind(env: NodeJS.ProcessEnv = process.env): StorageKind {
   return "none";
 }
 
-async function readBlob(token: string): Promise<string | null> {
+async function readBlob(token: string, path: string): Promise<string | null> {
   const { head } = await import("@vercel/blob");
   try {
-    const meta = await head(BLOB_PATH, { token });
+    const meta = await head(path, { token });
     const response = await fetch(meta.url, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
@@ -30,9 +34,9 @@ async function readBlob(token: string): Promise<string | null> {
   }
 }
 
-async function writeBlob(token: string, body: string): Promise<void> {
+async function writeBlob(token: string, path: string, body: string): Promise<void> {
   const { put } = await import("@vercel/blob");
-  await put(BLOB_PATH, body, {
+  await put(path, body, {
     access: "private",
     token,
     addRandomSuffix: false,
@@ -58,12 +62,9 @@ export async function readLedger(now: Date, env: NodeJS.ProcessEnv = process.env
   const kind = storageKind(env);
   if (kind === "none") return parseLedger("", now);
   try {
-    const raw =
-      kind === "blob"
-        ? await readBlob(env.BLOB_READ_WRITE_TOKEN!)
-        : ((await kvCommand(env, ["GET", KV_KEY])) as string | null);
-    if (!raw) return parseLedger("", now);
-    return parseLedger(raw, now);
+    const stored = await readStored("ledger", env);
+    if (!stored) return parseLedger("", now);
+    return parseLedger(stored, now);
   } catch {
     return parseLedger("", now);
   }
@@ -72,8 +73,22 @@ export async function readLedger(now: Date, env: NodeJS.ProcessEnv = process.env
 export async function writeLedger(ledger: Ledger, env: NodeJS.ProcessEnv = process.env): Promise<boolean> {
   const kind = storageKind(env);
   if (kind === "none") return false;
-  const body = JSON.stringify(ledger);
-  if (kind === "blob") await writeBlob(env.BLOB_READ_WRITE_TOKEN!, body);
-  else await kvCommand(env, ["SET", KV_KEY, body]);
+  return writeStored("ledger", JSON.stringify(ledger), env);
+}
+
+export async function readStored(name: StoreName, env: NodeJS.ProcessEnv = process.env): Promise<string | null> {
+  const kind = storageKind(env);
+  if (kind === "none") return null;
+  const store = STORES[name];
+  if (kind === "blob") return readBlob(env.BLOB_READ_WRITE_TOKEN!, store.blob);
+  return (await kvCommand(env, ["GET", store.kv])) as string | null;
+}
+
+export async function writeStored(name: StoreName, body: string, env: NodeJS.ProcessEnv = process.env): Promise<boolean> {
+  const kind = storageKind(env);
+  if (kind === "none") return false;
+  const store = STORES[name];
+  if (kind === "blob") await writeBlob(env.BLOB_READ_WRITE_TOKEN!, store.blob, body);
+  else await kvCommand(env, ["SET", store.kv, body]);
   return true;
 }

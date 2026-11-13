@@ -85,9 +85,11 @@ Los cortes del semáforo arrancan así y se cambian con variables de entorno. Sa
 
 | Señal | Atención | Alerta |
 | --- | --- | --- |
-| Ráfaga | 45 km/h | 65 km/h |
-| Viento medio | — | 50 km/h |
-| Lluvia | 1 mm en 24 h | 10 mm en 24 h, o 5 mm en una hora |
+| Ráfaga | 50 km/h, para tener en cuenta | 65 km/h |
+| Viento medio | 50 km/h, para tener en cuenta | — |
+| Lluvia | desde 2 mm: «ojo que hay lluvia» | 10 mm en 24 h, o 5 mm en una hora |
+
+Si los días previos ya suman 10 mm o más, una lluvia nueva pesa más: el piso del armado puede estar blando.
 
 Tormenta o granizo en un aviso del SMN que cubre el punto es alerta, igual que severidad Severe o Extreme.
 
@@ -134,3 +136,27 @@ Nada es obligatorio para que la página abra. Para que el ranking empiece a llen
 - `CRON_SECRET` en Vercel, el mismo que el cron manda en `Authorization`.
 
 El detalle de nombres está en el `README.md` y en `.env.example`.
+
+## Pantalla de obra y avisos
+
+La home muestra un lugar por vez, con selector también en días de armado. Cada lugar puede tener fecha de armado y de evento. Los tres lugares de siempre vienen prendidos; se pueden apagar y se pueden sumar otros (por ejemplo Fiesta del Sol en Villallén, o Mendoza). La lista vive en el teléfono y, si hay Blob o KV, también en el servidor.
+
+El cartel grande sigue siendo **Alerta**, **Atención** o **Todo bien**. No dice «se puede». Parte el dato en **Ahora** y **Después**, con la hora al lado del número. La sugerencia acompaña el grado: ajustar contrapesos, o revisar estructura, y cuidar lonas y cartelería.
+
+**Modo obra** saca el video y usa fondo claro de alto contraste, para el sol.
+
+El ranking de fuentes y el archivo del mismo día en otros años están en `/estadisticas`, no en la pantalla de la cuadrilla.
+
+Los avisos por mail (Resend), WhatsApp (Cloud API o Twilio) y push (claves VAPID) tienen interruptor en `/avisos`. Sin las claves, el interruptor se guarda y no se envía nada.
+
+## Widget de inicio o pantalla de bloqueo
+
+Una PWA hecha con Next.js no puede poner un widget en el inicio ni en la pantalla de bloqueo de iOS o Android. Eso pide una app nativa o un envoltorio (Expo/React Native o Capacitor) y el widget en código nativo: WidgetKit en Swift para iOS, Jetpack Glance o App Widgets en Kotlin para Android. Hace falta cuenta de desarrollador de Apple (99 USD por año) y revisión de la tienda. El sistema refresca el widget cuando quiere: en iOS suele ser entre 15 y 60 minutos, en Android el mínimo ronda los 30. Un aviso en el momento tiene que ir por push, no por el widget.
+
+En esta vuelta no se hace esa app. Queda preparado lo que el widget va a leer:
+
+- `GET /api/estado` devuelve el nivel, el ahora, el después y la sugerencia de cada lugar por defecto.
+- `GET /api/estado?id=estadio-san-juan` devuelve uno solo.
+- La web se puede instalar como PWA (`manifest.webmanifest` y service worker para el push).
+
+Cuando haya app nativa, el widget llama a ese JSON y el push cubre lo que el sistema no refresca a tiempo.

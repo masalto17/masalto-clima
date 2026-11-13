@@ -1,6 +1,5 @@
+import { Tablero } from "./tablero";
 import { loadClimateReport } from "@/lib/clima/load";
-import { Shell } from "./vista-general";
-import { EstadoClima } from "./estado";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -8,22 +7,15 @@ export const maxDuration = 60;
 export default async function Home() {
   try {
     const report = await loadClimateReport();
-    return (
-      <Shell>
-        <EstadoClima report={report} />
-      </Shell>
-    );
+    return <Tablero report={report} />;
   } catch {
     return (
-      <Shell>
-        <p role="alert" className="glass-panel rounded-xl border-red-500/60 px-4 py-3 text-sm font-semibold text-red-100">
+      <main className="mx-auto max-w-3xl px-4 py-8 text-white">
+        <p role="alert" className="rounded-xl border-2 border-red-400 px-4 py-4 text-base font-bold">
           Sistema sin datos, usar SMN.{" "}
-          <a className="underline underline-offset-4" href="https://www.smn.gob.ar/alertas">
-            Consultá el SMN
-          </a>
-          .
+          <a className="underline" href="https://www.smn.gob.ar/alertas">Consultá el SMN</a>.
         </p>
-      </Shell>
+      </main>
     );
   }
 }

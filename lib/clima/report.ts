@@ -9,9 +9,11 @@ import type { Thresholds } from "./thresholds";
 import { addDays } from "./time";
 import type {
   ClimateReport,
+  ConsensusHour,
   DayView,
   HourPoint,
   Level,
+  Momento,
   Observation,
   PlaceView,
   RankingRow,
@@ -38,6 +40,36 @@ const LEVEL_RANK: Record<Level, number> = { ok: 0, atencion: 1, alerta: 2 };
 
 function maxLevel(levels: Level[]): Level {
   return levels.reduce((best, level) => (LEVEL_RANK[level] > LEVEL_RANK[best] ? level : best), "ok");
+}
+
+/** La app avisa. La frase dice qué mirar, no si se puede trabajar. */
+export function suggestionFor(level: Level): string | null {
+  if (level === "alerta") return "Revisar estructura. Cuidar lonas y cartelería, que no haya nada suelto.";
+  if (level === "atencion") return "Ajustar contrapesos. Cuidar lonas y cartelería, que no haya nada suelto.";
+  return null;
+}
+
+function momentoTexto(hour: ConsensusHour): string {
+  const gust = hour.wind_gust_kmh ?? 0;
+  const wind = hour.wind_speed_kmh ?? 0;
+  const rain = Math.max(hour.precipitation_mm ?? 0, hour.rainHigh_mm ?? 0);
+  const parts: string[] = [];
+  if (gust >= 50 || wind >= 50) parts.push(`Ráfagas ${kmh(Math.max(gust, wind))}`);
+  if (rain >= 2) parts.push(`Ojo que hay lluvia, ${mm(rain)}`);
+  return parts.join(". ") || "Sin alerta en esa hora.";
+}
+
+function hourRisk(hour: ConsensusHour | undefined, thresholds: Thresholds): Level {
+  if (!hour) return "ok";
+  const gust = hour.wind_gust_kmh ?? 0;
+  const wind = hour.wind_speed_kmh ?? 0;
+  const peak = hour.gustPeak_kmh ?? 0;
+  const rain = Math.max(hour.precipitation_mm ?? 0, hour.rainHigh_mm ?? 0);
+  if (gust >= thresholds.gustAlerta || rain >= thresholds.rainHourAlertaMm) return "alerta";
+  if (gust >= thresholds.gustAtencion || wind >= thresholds.windAtencion || peak >= thresholds.gustAlerta || rain >= thresholds.rainAtencionMm) {
+    return "atencion";
+  }
+  return "ok";
 }
 
 function inRange(iso: string, from: number, until: number): boolean {
@@ -150,6 +182,7 @@ function buildPlace(
   scores: ScoreMap,
   thresholds: Thresholds,
   now: Date,
+  recentRainMm = 0,
 ): PlaceView {
   const consensus = consensusHours(points, (source, variable) => weightOf(scores, source, variable));
   const from = now.getTime() - 60 * 60_000;
@@ -191,15 +224,15 @@ function buildPlace(
     const peak = hour.gustPeak_kmh ?? 0;
     const agreeing = sourcesAtLeast(points, hour.validTime, thresholds.gustAlerta);
     const when = whenPhrase(hour.validTime, place.timezone, now);
-    if (gust >= thresholds.gustAlerta || windSpeed >= thresholds.windAlerta || agreeing >= 2) {
+    if (gust >= thresholds.gustAlerta || agreeing >= 2) {
       windHits.push({
         time: hour.validTime,
         level: "alerta",
         code: "rafaga",
         title: "Ráfagas fuertes",
-        detail: `El consenso llega a ${kmh(Math.max(gust, windSpeed))} ${when}. Alerta desde ${thresholds.gustAlerta} km/h de ráfaga o ${thresholds.windAlerta} km/h de viento.`,
+        detail: `Ráfagas de ${kmh(Math.max(gust, peak))} ${when}. Alerta desde ${thresholds.gustAlerta} km/h.`,
       });
-    } else if (gust >= thresholds.gustAtencion || peak >= thresholds.gustAtencion) {
+    } else if (gust >= thresholds.gustAtencion || windSpeed >= thresholds.windAtencion || peak >= thresholds.gustAtencion) {
       const lone = peak >= thresholds.gustAlerta && gust < thresholds.gustAlerta;
       windHits.push({
         time: hour.validTime,
@@ -207,8 +240,8 @@ function buildPlace(
         code: lone ? "rafaga-aislada" : "rafaga",
         title: lone ? "Una fuente marca ráfagas altas" : "Ráfagas para mirar",
         detail: lone
-          ? `${sourceLabel(hour.gustPeakSource ?? "")} llega a ${kmh(peak)} ${when}. El consenso queda en ${kmh(gust)}.`
-          : `Ráfagas de ${kmh(Math.max(gust, peak))} ${when}. Atención desde ${thresholds.gustAtencion} km/h.`,
+          ? `${sourceLabel(hour.gustPeakSource ?? "")} llega a ${kmh(peak)} ${when}. El valor que usamos queda en ${kmh(gust)}.`
+          : `${windSpeed >= thresholds.windAtencion && gust < thresholds.gustAtencion ? "Viento" : "Ráfagas"} de ${kmh(Math.max(gust, windSpeed, peak))} ${when}. Para tener en cuenta desde ${thresholds.windAtencion} km/h.`,
       });
     }
   }
@@ -221,19 +254,20 @@ function buildPlace(
   const next24 = consensus.filter((hour) => inRange(hour.validTime, from, until24));
   const rainSum = next24.reduce((sum, hour) => sum + (hour.precipitation_mm ?? 0), 0);
   const rainHour = next24.reduce((max, hour) => Math.max(max, hour.rainHigh_mm ?? 0), 0);
-  if (next24.length > 0 && (rainSum >= thresholds.rainAlertaMm || rainHour >= thresholds.rainHourAlertaMm)) {
+  const wetGround = recentRainMm >= thresholds.recentRainWetMm;
+  let rainLevel: Level = "ok";
+  if (next24.length > 0 && (rainSum >= thresholds.rainAlertaMm || rainHour >= thresholds.rainHourAlertaMm)) rainLevel = "alerta";
+  else if (next24.length > 0 && (rainSum >= thresholds.rainAtencionMm || rainHour >= thresholds.rainAtencionMm)) rainLevel = "atencion";
+  if (wetGround && rainSum >= thresholds.rainAtencionMm && rainLevel === "atencion" && (rainSum >= thresholds.rainAlertaMm / 2 || rainHour >= 3)) {
+    rainLevel = "alerta";
+  }
+  if (rainLevel !== "ok") {
+    const ground = wetGround ? ` En los últimos días se acumularon ${mm(recentRainMm)}: el piso del armado puede estar blando.` : "";
     reasons.push({
-      level: "alerta",
+      level: rainLevel,
       code: "lluvia",
-      title: "Lluvia fuerte",
-      detail: `En las próximas 24 h el consenso suma ${mm(rainSum)}.${rainHour >= thresholds.rainHourAlertaMm ? ` En una hora, una fuente confiable llega a ${mm(rainHour)}.` : ""}`,
-    });
-  } else if (next24.length > 0 && (rainSum >= thresholds.rainAtencionMm || rainHour >= thresholds.rainAtencionMm)) {
-    reasons.push({
-      level: "atencion",
-      code: "lluvia",
-      title: "Puede llover",
-      detail: `En las próximas 24 h el consenso suma ${mm(rainSum)}.`,
+      title: "Ojo que hay lluvia",
+      detail: `Ojo que hay lluvia. En las próximas 24 h, ${mm(rainSum)}.${rainHour >= thresholds.rainHourAlertaMm ? ` En una hora se llega a ${mm(rainHour)}.` : ""}${ground}`,
     });
   }
 
@@ -258,14 +292,7 @@ function buildPlace(
   }
 
   const level = maxLevel(reasons.map((reason) => reason.level));
-  const headline = level === "ok" ? "Todo bien" : (reasons.find((reason) => reason.level === level)?.title ?? "Atención");
-  const summary =
-    level === "ok"
-      ? "Sin viento, lluvia ni Zonda por encima de los umbrales en las próximas 48 h."
-      : reasons
-          .filter((reason) => reason.level === level)
-          .map((reason) => reason.detail)
-          .join(" ");
+  const headline = level === "alerta" ? "Alerta" : level === "atencion" ? "Atención" : "Todo bien";
 
   const today = localDateParts(now, place.timezone).date;
   const days: DayView[] = Array.from({ length: 7 }, (_, index) => {
@@ -276,16 +303,16 @@ function buildPlace(
     const flags = {
       zonda: hours.some((hour) => zonda.times.includes(hour.validTime)) || alerts.some((alert) => isZondaAlert(alert) && overlapsDay(alert, date, place.timezone)),
       rain: hours.some((hour) => (hour.precipitation_mm ?? 0) >= thresholds.rainAtencionMm || (hour.rainHigh_mm ?? 0) >= thresholds.rainHourAlertaMm),
-      wind: hours.some((hour) => (hour.wind_gust_kmh ?? 0) >= thresholds.gustAtencion || (hour.wind_speed_kmh ?? 0) >= thresholds.windAlerta || (hour.gustPeak_kmh ?? 0) >= thresholds.gustAtencion),
+      wind: hours.some((hour) => (hour.wind_gust_kmh ?? 0) >= thresholds.gustAtencion || (hour.wind_speed_kmh ?? 0) >= thresholds.windAtencion || (hour.gustPeak_kmh ?? 0) >= thresholds.gustAtencion),
     };
     let dayLevel: Level = "ok";
     for (const hour of hours) {
       const gust = hour.wind_gust_kmh ?? 0;
       const windSpeed = hour.wind_speed_kmh ?? 0;
       const peak = hour.gustPeak_kmh ?? 0;
-      if (gust >= thresholds.gustAlerta || windSpeed >= thresholds.windAlerta || (hour.rainHigh_mm ?? 0) >= thresholds.rainHourAlertaMm) {
+      if (gust >= thresholds.gustAlerta || (hour.rainHigh_mm ?? 0) >= thresholds.rainHourAlertaMm) {
         dayLevel = "alerta";
-      } else if (dayLevel === "ok" && (gust >= thresholds.gustAtencion || peak >= thresholds.gustAtencion || (hour.precipitation_mm ?? 0) >= thresholds.rainAtencionMm)) {
+      } else if (dayLevel === "ok" && (gust >= thresholds.gustAtencion || windSpeed >= thresholds.windAtencion || peak >= thresholds.gustAtencion || (hour.precipitation_mm ?? 0) >= thresholds.rainAtencionMm)) {
         dayLevel = "atencion";
       }
     }
@@ -360,6 +387,36 @@ function buildPlace(
     reasons: zonda.reasons,
   };
 
+  const ahoraHour = currentClose;
+  const ahoraNivel = hourRisk(ahoraHour, thresholds);
+  const ahoraTexto = !nowBlock
+    ? "Sin lectura de esta hora."
+    : [
+        nowBlock.temperature === null ? null : `${Math.round(nowBlock.temperature)}°`,
+        nowBlock.wind === null ? null : `viento ${kmh(nowBlock.wind)}`,
+        nowBlock.gust === null ? null : `ráfagas ${kmh(nowBlock.gust)}${nowBlock.gustIsForecast ? " (pronóstico)" : ""}`,
+        ahoraNivel === "ok" ? "Sin alerta en este momento." : null,
+      ].filter(Boolean).join(" · ");
+  const future = consensus
+    .filter((hour) => Date.parse(hour.validTime) > now.getTime() + 30 * 60_000 && Date.parse(hour.validTime) <= until48)
+    .sort((a, b) => a.validTime.localeCompare(b.validTime));
+  const despuesHour = level === "ok"
+    ? undefined
+    : future.find((hour) => hourRisk(hour, thresholds) === level)
+      ?? future.find((hour) => hourRisk(hour, thresholds) !== "ok");
+  const despues: Momento | null = despuesHour
+    ? {
+        etiqueta: "Después",
+        cuando: whenPhrase(despuesHour.validTime, place.timezone, now),
+        nivel: hourRisk(despuesHour, thresholds),
+        texto: momentoTexto(despuesHour),
+      }
+    : null;
+  const ahora: Momento = { etiqueta: "Ahora", cuando: "Ahora", nivel: ahoraNivel, texto: ahoraTexto };
+  const summary = level === "ok"
+    ? "Ahora y en las próximas horas no hay viento, lluvia ni Zonda para marcar."
+    : [ahora.texto, despues ? `Después, ${despues.cuando}: ${despues.texto}` : null].filter(Boolean).join(" ");
+
   return {
     id: place.id,
     name: place.name,
@@ -367,6 +424,10 @@ function buildPlace(
     level,
     headline,
     summary,
+    sugerencia: suggestionFor(level),
+    ahora,
+    despues,
+    lluviaRecienteMm: recentRainMm,
     nowLabel: observed ? `${observed.label}, ${formatAgo(new Date(observed.time), now)}` : nowBlock ? "Pronóstico de esta hora" : null,
     now: nowBlock,
     reasons,
@@ -379,12 +440,26 @@ function buildPlace(
 function rankingNote(storage: ClimateReport["storage"], rows: RankingRow[]): string {
   const samples = rows.reduce((sum, row) => sum + row.entries.reduce((inner, entry) => inner + entry.samples, 0), 0);
   if (storage === "none") {
-    return "Sin Blob ni KV el historial no se guarda y todas las fuentes pesan igual. Viento y ráfagas usan el valor más alto de las fuentes que todavía no demostraron ser peores.";
+    return "El historial de aciertos todavía no está guardado. Hasta entonces todas las fuentes pesan igual: en viento y ráfagas se toma el valor alto.";
   }
   if (samples === 0) {
     return "El registro está listo y todavía no hay horas vencidas para comparar. El cron diario las va a ir cerrando contra el METAR.";
   }
   return "Error medio absoluto contra el METAR del aeropuerto más cercano (si no hay METAR, contra la estación SMN). Con menos de 8 comparaciones la fuente sigue pesando igual. Ciudad y estadio de San Juan comparten la estación: el ranking es de la zona, no del predio.";
+}
+
+/** Lluvia de los días ya pasados, de una sola fuente, para el piso del armado. */
+export function recentRainMm(points: HourPoint[], placeId: string, timeZone: string, now: Date): number {
+  const today = localDateParts(now, timeZone).date;
+  const source = points.some((point) => point.placeId === placeId && point.source === "om-ecmwf")
+    ? "om-ecmwf"
+    : points.find((point) => point.placeId === placeId)?.source;
+  if (!source) return 0;
+  const sum = points.reduce((total, point) => {
+    if (point.placeId !== placeId || point.source !== source || point.precipitation_mm === null) return total;
+    return localDateParts(new Date(point.validTime), timeZone).date < today ? total + point.precipitation_mm : total;
+  }, 0);
+  return Math.round(sum * 10) / 10;
 }
 
 export function buildReport(input: {
@@ -398,6 +473,7 @@ export function buildReport(input: {
   thresholds: Thresholds;
   sources: SourceStatus[];
   storage: ClimateReport["storage"];
+  recentRain?: Record<string, number>;
 }): ClimateReport {
   const placeViews = input.places.map((place) =>
     buildPlace(
@@ -408,6 +484,7 @@ export function buildReport(input: {
       input.scores,
       input.thresholds,
       input.now,
+      input.recentRain?.[place.id] ?? 0,
     ),
   );
   placeViews.sort((a, b) => {

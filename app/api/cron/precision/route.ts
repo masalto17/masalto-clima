@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "crypto";
-import { runPrecisionCron } from "@/lib/clima/load";
+import { loadClimateReport, runPrecisionCron } from "@/lib/clima/load";
+import { dispatchAlerts } from "@/lib/clima/notify";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -19,7 +20,8 @@ export async function GET(request: Request) {
   }
   try {
     const result = await runPrecisionCron(new Date());
-    return Response.json({ ok: true, ...result });
+    const avisos = await dispatchAlerts(await loadClimateReport()).catch(() => ({ sent: 0 }));
+    return Response.json({ ok: true, ...result, avisos });
   } catch {
     return Response.json(
       { ok: false, stored: false, message: "No se pudo actualizar el registro de aciertos." },

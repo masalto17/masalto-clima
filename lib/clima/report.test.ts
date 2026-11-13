@@ -130,8 +130,46 @@ describe("estado", () => {
       point({ wind_direction_deg: 290, wind_gust_kmh: 70, wind_speed_kmh: 40, humidity_pct: 16, temperature_c: 36 }),
     ]);
     expect(result.places[0].zonda.level).toBe("probable");
-    expect(result.places[0].headline).toBe("Posible Zonda");
+    expect(result.places[0].headline).toBe("Alerta");
+    expect(result.places[0].sugerencia).toMatch(/Revisar estructura/);
     expect(result.places[0].reasons.map((reason) => reason.code)).not.toContain("rafaga");
+  });
+
+  it("el viento de 50 es para tener en cuenta y no es alerta", () => {
+    const result = report([point({ wind_speed_kmh: 55, wind_gust_kmh: 30 })]);
+    expect(result.level).toBe("atencion");
+    expect(result.headline).toBe("Atención");
+    expect(result.places[0].sugerencia).toMatch(/contrapesos/);
+  });
+
+  it("avisa ojo que hay lluvia desde 2 mm y sube si el piso ya viene mojado", () => {
+    const wet = buildReport({
+      now: NOW,
+      places: [estadio],
+      points: [point({ precipitation_mm: 3, wind_gust_kmh: 10, wind_speed_kmh: 8 })],
+      observations: [],
+      alerts: [],
+      alertsState: "ok",
+      scores: {},
+      thresholds: DEFAULT_THRESHOLDS,
+      sources: [],
+      storage: "none",
+      recentRain: { [estadio.id]: 24 },
+    });
+    expect(wet.places[0].reasons.map((reason) => reason.title)).toContain("Ojo que hay lluvia");
+    expect(wet.places[0].reasons.find((reason) => reason.code === "lluvia")?.detail).toMatch(/blando/);
+    expect(wet.places[0].sugerencia).toMatch(/estructura|contrapesos/);
+  });
+
+  it("separa ahora sin alerta y después con la hora", () => {
+    const result = report([
+      point({ wind_gust_kmh: 12, wind_speed_kmh: 8 }),
+      point({ wind_gust_kmh: 80, wind_speed_kmh: 40 }, "2026-11-15T02:00:00.000Z"),
+    ]);
+    expect(result.headline).toBe("Alerta");
+    expect(result.places[0].ahora.nivel).toBe("ok");
+    expect(result.places[0].despues?.cuando).toMatch(/mañana a las 23 h/);
+    expect(result.places[0].sugerencia).toMatch(/Revisar estructura/);
   });
 
   it("una tormenta oficial del SMN es alerta aunque el modelo esté quieto", () => {

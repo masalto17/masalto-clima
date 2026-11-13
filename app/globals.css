@@ -65,6 +65,19 @@ h1, h2, h3, .display-font {
   }
 }
 
+.estado-banner, .momento { border-radius: 1rem; border: 2px solid transparent; padding: 1rem 1.1rem; }
+.obra-ok { background: #064e3b; color: #ecfdf5; }
+.obra-atencion { background: #9a3412; color: #fff7ed; }
+.obra-alerta { background: #9f1239; color: #fff1f2; }
+body.modo-obra, .modo-obra { background: #f6f3ea; color: #16130e; }
+body.modo-obra { min-height: 100vh; }
+.modo-obra .obra-ok { background: #166534; color: #fff; }
+.modo-obra .obra-atencion { background: #c2410c; color: #fff; }
+.modo-obra .obra-alerta { background: #be123c; color: #fff; }
+.toque { min-height: 44px; display: inline-flex; align-items: center; border-radius: .75rem; border: 2px solid currentColor; padding: .4rem .8rem; font-weight: 700; }
+select.toque, input.toque { background: #111; color: #fff; width: 100%; }
+.modo-obra select.toque, .modo-obra input.toque { background: #fff; color: #16130e; }
+
 summary { list-style: none; }
 summary::-webkit-details-marker { display: none; }
 summary:focus-visible, a:focus-visible, button:focus-visible {

@@ -43,6 +43,7 @@ function openMeteoUrl(places: PublicPlace[], days: number, apiKey?: string): str
     hourly: OPEN_METEO_HOURLY,
     models: OPEN_METEO_MODELS.map(([model]) => model).join(","),
     forecast_days: String(days),
+    past_days: "5",
     timezone: "UTC",
     timeformat: "unixtime",
     wind_speed_unit: "kmh",

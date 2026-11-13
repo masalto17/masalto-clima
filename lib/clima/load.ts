@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { leadForecasts, updateLedger } from "./accuracy";
 import { fetchForecasts, fetchObservations, openMeteoKey, truncateWrf } from "./fetch";
 import { PUBLIC_PLACES, type PublicPlace } from "./places";
-import { buildReport, type AlertInput } from "./report";
+import { buildReport, recentRainMm, type AlertInput } from "./report";
 import { sourceLabel } from "./sources";
 import { readLedger, storageKind, writeLedger } from "./storage";
 import { loadThresholds } from "./thresholds";
@@ -76,8 +76,7 @@ async function loadWrf(places: PublicPlace[]): Promise<{ points: HourPoint[]; ok
   }
 }
 
-async function gather(now: Date, days: number, metarHours: number) {
-  const places = PUBLIC_PLACES;
+async function gather(now: Date, days: number, metarHours: number, places = PUBLIC_PLACES) {
   const [live, observations, wrf, alerts, ledger] = await Promise.all([
     fetchForecasts(places, { days, ...keys() }),
     fetchObservations(places, { metarHours, now }),
@@ -109,8 +108,7 @@ async function gather(now: Date, days: number, metarHours: number) {
   };
 }
 
-export async function buildClimateReport(now = new Date()): Promise<ClimateReport> {
-  const data = await gather(now, 7, 3);
+function toReport(data: Awaited<ReturnType<typeof gather>>, now: Date): ClimateReport {
   return buildReport({
     now,
     places: data.places,
@@ -122,10 +120,21 @@ export async function buildClimateReport(now = new Date()): Promise<ClimateRepor
     thresholds: loadThresholds(),
     sources: data.sources,
     storage: storageKind(),
+    recentRain: Object.fromEntries(
+      data.places.map((place) => [place.id, recentRainMm(data.points, place.id, place.timezone, now)]),
+    ),
   });
 }
 
-export const loadClimateReport = unstable_cache(async () => buildClimateReport(new Date()), ["clima-consenso-v2"], {
+export async function buildClimateReport(now = new Date()): Promise<ClimateReport> {
+  return toReport(await gather(now, 7, 3), now);
+}
+
+export async function reportForPlace(place: PublicPlace, now = new Date()): Promise<ClimateReport> {
+  return toReport(await gather(now, 7, 3, [place]), now);
+}
+
+export const loadClimateReport = unstable_cache(async () => buildClimateReport(new Date()), ["clima-consenso-v5"], {
   revalidate: 600,
 });
 

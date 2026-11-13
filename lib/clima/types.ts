@@ -86,6 +86,13 @@ export type DayView = {
   gustMax: number | null;
 };
 
+export type Momento = {
+  etiqueta: "Ahora" | "Después";
+  cuando: string;
+  nivel: Level;
+  texto: string;
+};
+
 export type PlaceView = {
   id: string;
   name: string;
@@ -93,6 +100,11 @@ export type PlaceView = {
   level: Level;
   headline: string;
   summary: string;
+  /** Qué mirar, sin decidir por la cuadrilla. */
+  sugerencia: string | null;
+  ahora: Momento;
+  despues: Momento | null;
+  lluviaRecienteMm: number;
   nowLabel: string | null;
   now: {
     temperature: number | null;
