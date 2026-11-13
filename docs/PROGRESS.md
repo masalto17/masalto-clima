@@ -4,9 +4,9 @@ Actualizar al cerrar cada sesión. Máximo 40 líneas: lo viejo se resume.
 
 ## Estado
 
-- Hito en curso: **Hito 2 — Backtest**; todavía sin medir aciertos ni validar un detector propio de Zonda.
-- Última revisión: 2026-11-12. Rama visual `hito-2-stitch-visual`, basada en `main` (`044c590`).
-- Producción: página pública de solo lectura con datos reales; PR #7 y el fondo animado del PR #8 ya se fusionaron. El rediseño de Stitch está en el PR #9 con vista previa verificada; aún no fusionado.
+- Hito en curso: **Hito 2 — Backtest**; todavía sin medir aciertos contra episodios ni calibrar el Zonda con casos reales.
+- Última revisión: 2026-11-13. En paralelo, `PROPUESTA.md`: consenso en vivo (Open-Meteo, MET Norway, METAR, SMN y claves opcionales), cartel todo bien / alerta, detector de Zonda y cron de aciertos en Vercel Blob o KV. `/demo` conserva la vista anterior.
+- Producción: página pública de solo lectura. PR #7, el fondo del PR #8 y el visual del PR #9 ya están en `main`.
 
 ## Hecho
 

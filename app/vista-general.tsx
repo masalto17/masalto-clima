@@ -29,9 +29,11 @@ export function Shell({ children, email }: { children: React.ReactNode; email?: 
           )}
         </header>
         <div className="space-y-1 pb-1 pt-2">
-          <p className="text-[10px] font-bold uppercase tracking-[.22em] text-red-400">Pronóstico por lugar</p>
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">El clima, claro y a tiempo.</h1>
-          <p className="max-w-xl text-sm leading-relaxed text-white/65">Viento, lluvia y avisos oficiales para los lugares que seguimos.</p>
+          <p className="text-[10px] font-bold uppercase tracking-[.22em] text-red-400">Estado del clima</p>
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">El tiempo en el predio.</h1>
+          <p className="max-w-xl text-sm leading-relaxed text-white/65">
+            Ahora y los próximos días. Si está todo bien, se lee al toque. Viento, lluvia y Zonda quedan marcados.
+          </p>
         </div>
         {children}
       </main>
